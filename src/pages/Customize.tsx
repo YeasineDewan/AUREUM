@@ -104,9 +104,58 @@ const Customize = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Skin Tone Selector */}
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Skin Tone</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2 flex-wrap">
+                    {SKIN_TONES.map((tone) => (
+                      <button
+                        key={tone.id}
+                        onClick={() => setSkinTone(tone)}
+                        title={tone.name}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          skinTone.id === tone.id
+                            ? "border-primary scale-110 ring-2 ring-primary/30"
+                            : "border-border hover:border-muted-foreground"
+                        }`}
+                        style={{ backgroundColor: tone.hex }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[10px] font-body text-muted-foreground mt-2">{skinTone.name}</p>
+                </CardContent>
+              </Card>
+
+              {/* Pose Presets */}
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Pose</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex rounded-lg border border-border overflow-hidden">
+                    {POSE_PRESETS.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setPose(p.id)}
+                        className={`flex-1 py-2.5 px-2 text-xs font-body font-medium transition-all flex items-center justify-center gap-1 ${
+                          pose === p.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <span>{p.icon}</span> {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
               <BodyScanner onMeasurements={setBodyMeasurements} measurements={bodyMeasurements} />
               <OutfitBuilder visibility={garments} onChange={setGarments} />
-            </div>
 
             {/* Center: 3D Viewer */}
             <div className="lg:col-span-5 order-1 lg:order-2">
