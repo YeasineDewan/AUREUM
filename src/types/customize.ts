@@ -86,15 +86,23 @@ export const DEFAULT_GARMENT_VISIBILITY: GarmentVisibility = {
 };
 
 // Convert measurements to 3D scale multipliers
+// Amplification factor makes small differences visually obvious
+const AMP = 2.5; // amplifies deviation from baseline by 2.5×
+
+function amplify(raw: number): number {
+  // raw is ratio around 1.0 — amplify the delta
+  return 1 + (raw - 1) * AMP;
+}
+
 export function measurementsToMorphTargets(m: BodyMeasurements) {
   // Normalize around "average" male proportions: 5'10", 40" chest, 34" waist
-  const heightScale = m.height / 70; // 70 inches = 5'10"
-  const chestScale = m.chest / 40;
-  const waistScale = m.waist / 34;
-  const hipScale = m.hips / 38;
-  const shoulderScale = m.shoulders / 18;
-  const legScale = m.inseam / 32;
-  const armScale = m.sleeveLength / 25;
+  const heightScale = amplify(m.height / 70);
+  const chestScale = amplify(m.chest / 40);
+  const waistScale = amplify(m.waist / 34);
+  const hipScale = amplify(m.hips / 38);
+  const shoulderScale = amplify(m.shoulders / 18);
+  const legScale = amplify(m.inseam / 32);
+  const armScale = amplify(m.sleeveLength / 25);
 
   return {
     heightScale,
