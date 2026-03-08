@@ -9,27 +9,29 @@ import { Palette, Shirt, Layers, RotateCcw } from "lucide-react";
 import * as THREE from "three";
 
 const FABRICS = [
-  { id: "wool", name: "Italian Wool", color: "#2c2c2c", roughness: 0.85, metalness: 0.02, bumpScale: 0.015 },
-  { id: "linen", name: "Belgian Linen", color: "#c8b99a", roughness: 0.95, metalness: 0.0, bumpScale: 0.025 },
-  { id: "cotton", name: "Egyptian Cotton", color: "#f5f0e8", roughness: 0.9, metalness: 0.0, bumpScale: 0.01 },
-  { id: "cashmere", name: "Cashmere Blend", color: "#4a3f35", roughness: 0.75, metalness: 0.03, bumpScale: 0.008 },
+  { id: "wool", name: "Italian Wool", color: "#2c2c2c", roughness: 0.85, metalness: 0.02, bumpScale: 0.015, price: 450 },
+  { id: "linen", name: "Belgian Linen", color: "#c8b99a", roughness: 0.95, metalness: 0.0, bumpScale: 0.025, price: 320 },
+  { id: "cotton", name: "Egyptian Cotton", color: "#f5f0e8", roughness: 0.9, metalness: 0.0, bumpScale: 0.01, price: 280 },
+  { id: "cashmere", name: "Cashmere Blend", color: "#4a3f35", roughness: 0.75, metalness: 0.03, bumpScale: 0.008, price: 680 },
 ];
 
 const COLORS = [
-  { id: "charcoal", name: "Charcoal", hex: "#2c2c2c" },
-  { id: "navy", name: "Navy", hex: "#1a2744" },
-  { id: "burgundy", name: "Burgundy", hex: "#5c1a2a" },
-  { id: "camel", name: "Camel", hex: "#c4a265" },
-  { id: "slate", name: "Slate Grey", hex: "#6b7280" },
-  { id: "cream", name: "Ivory", hex: "#f5f0e8" },
+  { id: "charcoal", name: "Charcoal", hex: "#2c2c2c", premium: 0 },
+  { id: "navy", name: "Navy", hex: "#1a2744", premium: 0 },
+  { id: "burgundy", name: "Burgundy", hex: "#5c1a2a", premium: 25 },
+  { id: "camel", name: "Camel", hex: "#c4a265", premium: 35 },
+  { id: "slate", name: "Slate Grey", hex: "#6b7280", premium: 0 },
+  { id: "cream", name: "Ivory", hex: "#f5f0e8", premium: 15 },
 ];
 
 const STYLES = [
-  { id: "classic", name: "Classic", shoulderMult: 1.0, lapelMult: 1.0, buttonCount: 2 },
-  { id: "slim", name: "Slim Modern", shoulderMult: 0.92, lapelMult: 0.8, buttonCount: 2 },
-  { id: "doublebreasted", name: "Double Breasted", shoulderMult: 1.06, lapelMult: 1.3, buttonCount: 4 },
-  { id: "deconstructed", name: "Deconstructed", shoulderMult: 0.96, lapelMult: 0.6, buttonCount: 0 },
+  { id: "classic", name: "Classic", shoulderMult: 1.0, lapelMult: 1.0, buttonCount: 2, price: 0 },
+  { id: "slim", name: "Slim Modern", shoulderMult: 0.92, lapelMult: 0.8, buttonCount: 2, price: 50 },
+  { id: "doublebreasted", name: "Double Breasted", shoulderMult: 1.06, lapelMult: 1.3, buttonCount: 4, price: 120 },
+  { id: "deconstructed", name: "Deconstructed", shoulderMult: 0.96, lapelMult: 0.6, buttonCount: 0, price: 80 },
 ];
+
+const BASE_TAILORING = 150;
 
 /** Generate a canvas-based fabric bump texture */
 function useFabricTexture(fabricId: string) {
