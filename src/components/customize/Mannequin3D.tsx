@@ -604,7 +604,9 @@ export default function Mannequin3D({
 
   const morph = useMemo(() => {
     if (!bodyMeasurements) return { heightScale: 1, chestScale: 1, waistScale: 1, hipScale: 1, shoulderScale: 1, legScale: 1, armScale: 1 };
-    return measurementsToMorphTargets(bodyMeasurements);
+    const m = measurementsToMorphTargets(bodyMeasurements);
+    console.log("[Mannequin3D] morph targets:", m, "from measurements:", bodyMeasurements);
+    return m;
   }, [bodyMeasurements]);
 
   // Animated pose
