@@ -870,10 +870,10 @@ export default function Mannequin3D({
       {!garments.jacket && garments.shirt && (
         <>
           <mesh geometry={jacketGeo} material={shirtMat} castShadow />
-          <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+          <group ref={leftSleeveAltRef}>
             <mesh geometry={leftSleeveGeo} material={shirtMat} castShadow />
           </group>
-          <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+          <group ref={rightSleeveAltRef}>
             <mesh geometry={rightSleeveGeo} material={shirtMat} castShadow />
           </group>
         </>
