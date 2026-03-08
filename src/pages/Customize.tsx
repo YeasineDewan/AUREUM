@@ -42,6 +42,7 @@ const Customize = () => {
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0]);
   const [garments, setGarments] = useState<GarmentVisibility>(DEFAULT_GARMENT_VISIBILITY);
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurements | null>(null);
+  const [gender, setGender] = useState<Gender>("male");
 
   const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium + selectedPattern.premium;
 
