@@ -407,7 +407,7 @@ function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTo
           {/* Eye socket shadow */}
           <mesh position={[side * 0.032 * s, 1.625 * s / s, -0.002]} rotation={[0.1, 0, 0]}>
             <sphereGeometry args={[0.018 * s, 12, 12]} />
-            <meshPhysicalMaterial color="#c49070" roughness={0.8} transparent opacity={0.3} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.8} transparent opacity={0.3} />
           </mesh>
           {/* Eyeball */}
           <mesh position={[side * 0.032 * s, 1.628, 0.082]}>
