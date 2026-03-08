@@ -1,230 +1,251 @@
-import { useRef, useMemo, useCallback, forwardRef, useImperativeHandle } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { StyleOption, GarmentVisibility, BodyMeasurements } from "@/types/customize";
 import { measurementsToMorphTargets } from "@/types/customize";
 
-// ── Fabric bump texture generator ──
-function useFabricTexture(fabricId: string) {
-  return useMemo(() => {
-    const size = 256;
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#808080";
-    ctx.fillRect(0, 0, size, size);
-
-    if (fabricId.includes("wool") || fabricId === "tweed" || fabricId === "merino-wool") {
-      for (let y = 0; y < size; y += 3) {
-        for (let x = 0; x < size; x += 3) {
-          const v = 120 + Math.random() * 16;
-          ctx.fillStyle = `rgb(${v},${v},${v})`;
-          ctx.fillRect(x, y, 2, 2);
-        }
-        if (y % 6 === 0) {
-          ctx.strokeStyle = `rgba(100,100,100,0.3)`;
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y + size * 0.5); ctx.stroke();
-        }
-      }
-    } else if (fabricId.includes("linen")) {
-      for (let y = 0; y < size; y += 4) {
-        const v = 118 + Math.random() * 20;
-        ctx.strokeStyle = `rgb(${v},${v},${v})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y + (Math.random() - 0.5) * 2); ctx.stroke();
-      }
-      for (let x = 0; x < size; x += 5) {
-        const v = 118 + Math.random() * 20;
-        ctx.strokeStyle = `rgb(${v},${v},${v})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + (Math.random() - 0.5) * 2, size); ctx.stroke();
-      }
-    } else if (fabricId === "velvet") {
-      for (let y = 0; y < size; y += 1) {
-        for (let x = 0; x < size; x += 1) {
-          const v = 124 + Math.random() * 6;
-          ctx.fillStyle = `rgb(${v},${v},${v})`;
-          ctx.fillRect(x, y, 1, 1);
-        }
-      }
-    } else if (fabricId === "silk-blend") {
-      ctx.fillStyle = "#828282";
-      ctx.fillRect(0, 0, size, size);
-      for (let y = 0; y < size; y += 2) {
-        const v = 128 + Math.sin(y * 0.1) * 4;
-        ctx.strokeStyle = `rgb(${v},${v},${v})`;
-        ctx.lineWidth = 0.5;
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
-      }
-    } else {
-      for (let y = 0; y < size; y += 2) {
-        for (let x = 0; x < size; x += 2) {
-          const v = 125 + Math.random() * 8;
-          ctx.fillStyle = `rgb(${v},${v},${v})`;
-          ctx.fillRect(x, y, 2, 2);
-        }
-      }
-    }
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(8, 8);
-    return tex;
-  }, [fabricId]);
-}
-
-// ── Create smooth lathe profile from points ──
-function smoothLatheProfile(pts: [number, number][], segments = 32): THREE.Vector2[] {
-  if (pts.length < 2) return pts.map(([x, y]) => new THREE.Vector2(x, y));
+// ── Smooth spline profile helper ──
+function splineProfile(pts: [number, number][], segments = 48): THREE.Vector2[] {
   const curve = new THREE.SplineCurve(pts.map(([x, y]) => new THREE.Vector2(x, y)));
   return curve.getPoints(segments);
 }
 
-// ── Realistic body part geometries ──
-function createTorsoGeometry(cs: number, ws: number, hs: number, sw: number) {
-  // Female torso profile: shoulders → chest → waist → hips
+// ── Fabric bump texture ──
+function useFabricTexture(fabricId: string) {
+  return useMemo(() => {
+    const s = 512;
+    const c = document.createElement("canvas");
+    c.width = s; c.height = s;
+    const x = c.getContext("2d")!;
+    x.fillStyle = "#808080";
+    x.fillRect(0, 0, s, s);
+    if (fabricId.includes("wool") || fabricId === "tweed") {
+      for (let y = 0; y < s; y += 2) for (let i = 0; i < s; i += 2) { const v = 120 + Math.random() * 16; x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(i, y, 2, 2); }
+      for (let y = 0; y < s; y += 8) { x.strokeStyle = `rgba(100,100,100,0.25)`; x.beginPath(); x.moveTo(0, y); x.lineTo(s, y + 4); x.stroke(); }
+    } else if (fabricId.includes("linen")) {
+      for (let y = 0; y < s; y += 3) { const v = 118 + Math.random() * 18; x.strokeStyle = `rgb(${v},${v},${v})`; x.lineWidth = 1; x.beginPath(); x.moveTo(0, y); x.lineTo(s, y); x.stroke(); }
+      for (let i = 0; i < s; i += 4) { const v = 118 + Math.random() * 18; x.strokeStyle = `rgb(${v},${v},${v})`; x.lineWidth = 0.8; x.beginPath(); x.moveTo(i, 0); x.lineTo(i, s); x.stroke(); }
+    } else if (fabricId === "silk-blend") {
+      x.fillStyle = "#838383"; x.fillRect(0, 0, s, s);
+      for (let y = 0; y < s; y++) { const v = 128 + Math.sin(y * 0.08) * 5; x.strokeStyle = `rgb(${v},${v},${v})`; x.lineWidth = 0.4; x.beginPath(); x.moveTo(0, y); x.lineTo(s, y); x.stroke(); }
+    } else if (fabricId === "velvet") {
+      for (let y = 0; y < s; y++) for (let i = 0; i < s; i++) { const v = 124 + Math.random() * 6; x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(i, y, 1, 1); }
+    } else {
+      for (let y = 0; y < s; y += 2) for (let i = 0; i < s; i += 2) { const v = 125 + Math.random() * 8; x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(i, y, 2, 2); }
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(10, 10);
+    return tex;
+  }, [fabricId]);
+}
+
+// ── Full body mesh (single continuous lathe) ──
+function createFullBodyGeo(cs: number, ws: number, hs: number, sw: number, heightS: number) {
+  // One continuous profile from top of head to ankle
+  // Y goes from 0 (top of head) to 1 (feet)
   const pts: [number, number][] = [
-    [0.03, 0],           // neck base center
-    [0.10, 0.02],        // neck base
-    [0.19 * sw, 0.06],   // shoulder transition
-    [0.24 * sw, 0.10],   // shoulder
-    [0.22 * cs, 0.18],   // upper chest
-    [0.21 * cs, 0.25],   // chest
-    [0.19 * cs, 0.32],   // under chest
-    [0.16 * ws, 0.40],   // waist
-    [0.15 * ws, 0.44],   // natural waist
-    [0.17 * hs, 0.50],   // above hip
-    [0.21 * hs, 0.56],   // hip
-    [0.22 * hs, 0.60],   // widest hip
-    [0.21 * hs, 0.64],   // lower hip
-    [0.18 * hs, 0.68],   // hip bottom
-    [0.15, 0.70],        // pelvis top
+    // Head top
+    [0.00, 0.000],
+    [0.06, 0.005],
+    [0.10, 0.015],
+    [0.13, 0.030],
+    [0.145, 0.050],
+    [0.15, 0.070],  // forehead widest
+    [0.148, 0.090],
+    [0.14, 0.105],  // temple
+    [0.135, 0.115],  // cheekbone
+    [0.125, 0.130],  // jaw
+    [0.10, 0.145],
+    [0.065, 0.155],
+    [0.03, 0.160],   // chin
+    // Neck
+    [0.055, 0.170],
+    [0.065, 0.180],
+    [0.070, 0.195],
+    [0.072, 0.210],  // neck center
+    [0.078, 0.225],  // neck base
+    // Shoulders & upper torso
+    [0.12, 0.235],   // trap
+    [0.20 * sw, 0.245],   // shoulder onset
+    [0.24 * sw, 0.255],   // shoulder peak
+    [0.245 * sw, 0.265],  // deltoid
+    [0.235 * sw, 0.280],
+    // Chest
+    [0.22 * cs, 0.300],   // upper chest
+    [0.215 * cs, 0.320],  // chest
+    [0.21 * cs, 0.340],   // mid chest
+    [0.195 * cs, 0.360],  // under bust
+    // Waist
+    [0.175 * ws, 0.385],
+    [0.160 * ws, 0.405],  // natural waist (narrowest)
+    [0.158 * ws, 0.415],
+    [0.165 * ws, 0.430],
+    // Hips
+    [0.185 * hs, 0.450],
+    [0.205 * hs, 0.470],  // hip
+    [0.215 * hs, 0.485],  // widest hip
+    [0.218 * hs, 0.495],
+    [0.215 * hs, 0.510],
+    [0.205 * hs, 0.525],
+    [0.190 * hs, 0.540],
+    // Upper thigh / crotch area
+    [0.165, 0.555],
+    [0.145, 0.565],
+    [0.130, 0.575],   // inner thigh line (legs split)
+    [0.125, 0.580],
+    // Upper leg (single leg profile for lathe)
+    [0.120, 0.590],
+    [0.115, 0.610],
+    [0.110, 0.640],
+    [0.105, 0.670],
+    [0.098, 0.700],   // above knee
+    // Knee
+    [0.088, 0.720],
+    [0.082, 0.735],   // knee center
+    [0.078, 0.745],
+    // Calf
+    [0.082, 0.760],
+    [0.085, 0.780],   // calf widest
+    [0.082, 0.810],
+    [0.072, 0.850],
+    [0.060, 0.890],
+    // Ankle
+    [0.048, 0.925],
+    [0.042, 0.945],
+    [0.038, 0.960],   // ankle narrowest
+    // Foot
+    [0.045, 0.970],
+    [0.055, 0.980],
+    [0.060, 0.990],
+    [0.055, 0.997],
+    [0.040, 1.000],
   ];
-  const profile = smoothLatheProfile(pts, 48);
+
+  const profile = splineProfile(pts, 128);
+  const geo = new THREE.LatheGeometry(profile, 80);
+  return geo;
+}
+
+// ── Arm geometry (continuous shoulder to hand) ──
+function createArmGeo(armScale: number) {
+  const pts: [number, number][] = [
+    // Shoulder cap
+    [0.065, 0.00],
+    [0.072, 0.03],   // deltoid
+    [0.070, 0.08],
+    [0.065, 0.14],
+    // Bicep
+    [0.060, 0.20],
+    [0.057, 0.28],
+    [0.052, 0.35],
+    // Elbow
+    [0.047, 0.42],
+    [0.044, 0.46],
+    [0.043, 0.48],   // elbow point
+    // Forearm
+    [0.048, 0.52],
+    [0.046, 0.58],
+    [0.042, 0.65],
+    [0.037, 0.72],
+    // Wrist
+    [0.032, 0.78],
+    [0.028, 0.82 * armScale],
+    // Hand
+    [0.035, 0.85 * armScale],
+    [0.038, 0.88 * armScale],
+    [0.036, 0.92 * armScale],
+    [0.030, 0.95 * armScale],
+    [0.018, 0.98 * armScale],
+    [0.005, 1.00 * armScale],
+  ];
+  const profile = splineProfile(pts, 64);
+  return new THREE.LatheGeometry(profile, 28);
+}
+
+// ── Jacket torso overlay ──
+function createJacketGeo(cs: number, ws: number, hs: number, sw: number) {
+  const offset = 0.018; // jacket sits slightly outside body
+  const pts: [number, number][] = [
+    [0.080 + offset, 0.00],   // collar
+    [0.13 + offset, 0.03],    // neck
+    [0.22 * sw + offset, 0.08], // shoulder
+    [0.25 * sw + offset, 0.12], // shoulder pad
+    [0.24 * sw + offset, 0.16],
+    [0.23 * cs + offset, 0.22], // chest
+    [0.22 * cs + offset, 0.30],
+    [0.20 * cs + offset, 0.38],
+    [0.18 * ws + offset, 0.46], // waist
+    [0.17 * ws + offset, 0.50],
+    [0.19 * hs + offset, 0.56], // hip
+    [0.20 * hs + offset, 0.62],
+    [0.21 * hs + offset, 0.68], // jacket hem
+    [0.20 * hs + offset, 0.72],
+    [0.15 + offset, 0.76],
+  ];
+  const profile = splineProfile(pts, 56);
   return new THREE.LatheGeometry(profile, 64);
 }
 
-function createUpperLegGeometry() {
+// ── Trouser legs ──
+function createTrouserLegGeo() {
+  const offset = 0.008;
   const pts: [number, number][] = [
-    [0.12, 0],      // top
-    [0.115, 0.05],
-    [0.11, 0.15],
-    [0.10, 0.25],
-    [0.09, 0.35],
-    [0.08, 0.42],
-    [0.075, 0.50],  // knee area
+    [0.130 + offset, 0.00],  // waistband
+    [0.125 + offset, 0.05],
+    [0.120 + offset, 0.12],
+    [0.115 + offset, 0.20],
+    [0.108 + offset, 0.30],
+    [0.098 + offset, 0.40],  // above knee
+    [0.088 + offset, 0.48],
+    [0.085 + offset, 0.52],  // knee
+    [0.088 + offset, 0.56],
+    [0.085 + offset, 0.62],
+    [0.078 + offset, 0.70],
+    [0.068 + offset, 0.80],
+    [0.058 + offset, 0.88],
+    [0.052 + offset, 0.94],  // cuff
+    [0.050 + offset, 0.98],
+    [0.048 + offset, 1.00],
   ];
-  const profile = smoothLatheProfile(pts, 32);
-  return new THREE.LatheGeometry(profile, 32);
+  const profile = splineProfile(pts, 48);
+  return new THREE.LatheGeometry(profile, 28);
 }
 
-function createLowerLegGeometry() {
-  const pts: [number, number][] = [
-    [0.07, 0],      // below knee
-    [0.072, 0.05],  // calf
-    [0.075, 0.12],  // widest calf
-    [0.068, 0.25],
-    [0.055, 0.38],
-    [0.045, 0.46],  // ankle
-    [0.042, 0.50],  // ankle bottom
-  ];
-  const profile = smoothLatheProfile(pts, 32);
-  return new THREE.LatheGeometry(profile, 32);
-}
-
-function createUpperArmGeometry() {
-  const pts: [number, number][] = [
-    [0.065, 0],     // shoulder cap
-    [0.07, 0.05],
-    [0.068, 0.12],  // deltoid
-    [0.06, 0.25],   // bicep
-    [0.055, 0.35],
-    [0.048, 0.42],
-    [0.045, 0.50],  // elbow
-  ];
-  const profile = smoothLatheProfile(pts, 24);
-  return new THREE.LatheGeometry(profile, 24);
-}
-
-function createLowerArmGeometry() {
-  const pts: [number, number][] = [
-    [0.045, 0],     // elbow
-    [0.048, 0.05],  // forearm
-    [0.046, 0.15],
-    [0.04, 0.28],
-    [0.035, 0.38],
-    [0.03, 0.45],   // wrist
-    [0.028, 0.50],
-  ];
-  const profile = smoothLatheProfile(pts, 24);
-  return new THREE.LatheGeometry(profile, 24);
-}
-
-function createHeadGeometry() {
-  // Egg-shaped head
-  const pts: [number, number][] = [
-    [0.0, 0],       // top of head
-    [0.08, 0.04],
-    [0.14, 0.10],
-    [0.17, 0.18],   // widest forehead
-    [0.16, 0.28],   // temple
-    [0.15, 0.35],   // cheekbone
-    [0.14, 0.42],   // jaw
-    [0.11, 0.48],
-    [0.07, 0.52],   // chin
-    [0.02, 0.55],
-    [0.0, 0.56],    // chin tip
-  ];
-  const profile = smoothLatheProfile(pts, 36);
-  return new THREE.LatheGeometry(profile, 48);
-}
-
-function createNeckGeometry() {
-  const pts: [number, number][] = [
-    [0.07, 0],
-    [0.075, 0.15],
-    [0.08, 0.4],
-    [0.09, 0.7],
-    [0.10, 1.0],
-  ];
-  const profile = smoothLatheProfile(pts, 16);
-  return new THREE.LatheGeometry(profile, 24);
-}
-
-function createFootGeometry() {
+// ── Shoe geometry ──
+function createShoeGeo() {
   const shape = new THREE.Shape();
-  shape.moveTo(0, 0);
-  shape.lineTo(0.06, 0);
-  shape.quadraticCurveTo(0.10, 0.01, 0.12, 0.04);
-  shape.lineTo(0.12, 0.05);
-  shape.quadraticCurveTo(0.10, 0.06, 0.06, 0.065);
-  shape.lineTo(-0.04, 0.065);
-  shape.quadraticCurveTo(-0.06, 0.06, -0.06, 0.04);
-  shape.lineTo(-0.06, 0.02);
-  shape.quadraticCurveTo(-0.06, 0, 0, 0);
-
-  const extrudeSettings = { depth: 0.20, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 6 };
-  return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  shape.moveTo(-0.04, 0);
+  shape.quadraticCurveTo(-0.055, 0.01, -0.055, 0.035);
+  shape.lineTo(-0.055, 0.055);
+  shape.quadraticCurveTo(-0.04, 0.07, 0, 0.072);
+  shape.lineTo(0.08, 0.072);
+  shape.quadraticCurveTo(0.12, 0.065, 0.13, 0.04);
+  shape.quadraticCurveTo(0.12, 0.005, 0.08, 0);
+  shape.lineTo(-0.04, 0);
+  return new THREE.ExtrudeGeometry(shape, { depth: 0.10, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 5 });
 }
 
-function createHandGeometry() {
+// ── Jacket sleeve ──
+function createSleeveGeo(armScale: number) {
+  const offset = 0.012;
   const pts: [number, number][] = [
-    [0.005, 0],
-    [0.025, 0.03],
-    [0.032, 0.06],
-    [0.03, 0.09],
-    [0.025, 0.11],
-    [0.015, 0.12],
-    [0.005, 0.12],
+    [0.072 + offset, 0.00],
+    [0.078 + offset, 0.04],
+    [0.074 + offset, 0.12],
+    [0.068 + offset, 0.22],
+    [0.062 + offset, 0.32],
+    [0.055 + offset, 0.42],
+    [0.050 + offset, 0.50],
+    [0.052 + offset, 0.55],
+    [0.050 + offset, 0.62],
+    [0.046 + offset, 0.70],
+    [0.042 + offset, 0.78],
+    [0.038 + offset, 0.84 * armScale],
+    [0.036 + offset, 0.88 * armScale],
   ];
-  const profile = smoothLatheProfile(pts, 12);
-  return new THREE.LatheGeometry(profile, 16);
-}
-
-// ── Export handle ──
-export interface MannequinHandle {
-  exportScene: () => THREE.Group | null;
+  const profile = splineProfile(pts, 40);
+  return new THREE.LatheGeometry(profile, 24);
 }
 
 interface MannequinProps {
@@ -236,9 +257,9 @@ interface MannequinProps {
   bodyMeasurements: BodyMeasurements | null;
 }
 
-const Mannequin3D = forwardRef<MannequinHandle, MannequinProps>(({
+export default function Mannequin3D({
   color, fabricId, fabricProps, styleConfig, garments, bodyMeasurements,
-}, ref) => {
+}: MannequinProps) {
   const group = useRef<THREE.Group>(null);
   const bumpMap = useFabricTexture(fabricId);
 
@@ -247,26 +268,23 @@ const Mannequin3D = forwardRef<MannequinHandle, MannequinProps>(({
     return measurementsToMorphTargets(bodyMeasurements);
   }, [bodyMeasurements]);
 
-  useImperativeHandle(ref, () => ({
-    exportScene: () => group.current,
-  }));
-
   useFrame((state) => {
     if (group.current) {
-      group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.25) * 0.08;
+      group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.06;
     }
   });
 
   // ── Materials ──
   const skinMat = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: "#d4a986",
-    roughness: 0.55,
-    metalness: 0,
-    clearcoat: 0.12,
-    clearcoatRoughness: 0.6,
-    sheen: 0.15,
+    roughness: 0.48,
+    metalness: 0.0,
+    clearcoat: 0.15,
+    clearcoatRoughness: 0.55,
+    sheen: 0.25,
     sheenColor: new THREE.Color("#e8c4a0"),
-    sheenRoughness: 0.4,
+    sheenRoughness: 0.35,
+    envMapIntensity: 0.6,
   }), []);
 
   const suitMat = useMemo(() => new THREE.MeshPhysicalMaterial({
@@ -275,10 +293,11 @@ const Mannequin3D = forwardRef<MannequinHandle, MannequinProps>(({
     metalness: fabricProps.metalness,
     bumpMap, bumpScale: fabricProps.bumpScale,
     clearcoat: fabricId.includes("wool") ? 0.05 : fabricId === "silk-blend" ? 0.15 : 0,
-    clearcoatRoughness: 0.9,
-    sheen: fabricId === "cashmere" ? 0.4 : fabricId === "velvet" ? 0.6 : fabricId.includes("wool") ? 0.15 : 0,
+    clearcoatRoughness: 0.85,
+    sheen: fabricId === "cashmere" ? 0.45 : fabricId === "velvet" ? 0.65 : fabricId.includes("wool") ? 0.18 : 0.05,
     sheenColor: new THREE.Color(color).offsetHSL(0, -0.1, 0.15),
-    sheenRoughness: 0.6,
+    sheenRoughness: 0.55,
+    envMapIntensity: 0.5,
   }), [color, fabricProps, bumpMap, fabricId]);
 
   const trouserMat = useMemo(() => new THREE.MeshPhysicalMaterial({
@@ -286,120 +305,182 @@ const Mannequin3D = forwardRef<MannequinHandle, MannequinProps>(({
     roughness: fabricProps.roughness + 0.02,
     metalness: fabricProps.metalness,
     bumpMap, bumpScale: fabricProps.bumpScale * 0.8,
+    envMapIntensity: 0.4,
   }), [color, fabricProps, bumpMap]);
 
-  const shirtMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#f0ebe3", roughness: 0.8, metalness: 0 }), []);
-  const shoeMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#1a1410", roughness: 0.25, metalness: 0.08, clearcoat: 0.3, clearcoatRoughness: 0.4 }), []);
-  const buttonMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#6b5d4f", roughness: 0.4, metalness: 0.15, clearcoat: 0.2 }), []);
+  const shirtMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#f0ebe3", roughness: 0.75, metalness: 0, envMapIntensity: 0.3 }), []);
+  const shoeMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#1a1410", roughness: 0.22, metalness: 0.10, clearcoat: 0.35, clearcoatRoughness: 0.35, envMapIntensity: 0.8 }), []);
+  const buttonMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#6b5d4f", roughness: 0.35, metalness: 0.18, clearcoat: 0.25 }), []);
   const vestMat = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(color).offsetHSL(0, 0.05, 0.05),
     roughness: fabricProps.roughness - 0.05, metalness: fabricProps.metalness + 0.02, bumpMap, bumpScale: fabricProps.bumpScale * 0.6,
   }), [color, fabricProps, bumpMap]);
-  const tieMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#5c1a2a", roughness: 0.4, metalness: 0.05 }), []);
-  const beltMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#1a1410", roughness: 0.35, metalness: 0.1, clearcoat: 0.2 }), []);
+  const tieMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#5c1a2a", roughness: 0.38, metalness: 0.05, sheen: 0.3, sheenColor: new THREE.Color("#8a2040"), sheenRoughness: 0.4 }), []);
+  const beltMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#1a1410", roughness: 0.30, metalness: 0.12, clearcoat: 0.25 }), []);
+  const hairMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: "#1a1410", roughness: 0.85, metalness: 0 }), []);
 
-  // ── Geometries ──
   const sw = styleConfig.shoulderMult * morph.shoulderScale;
   const cs = morph.chestScale;
   const ws = morph.waistScale;
   const hs = morph.hipScale;
   const heightS = morph.heightScale;
-  const legS = morph.legScale;
   const armS = morph.armScale;
 
-  const torsoGeo = useMemo(() => createTorsoGeometry(cs, ws, hs, sw), [cs, ws, hs, sw]);
-  const headGeo = useMemo(() => createHeadGeometry(), []);
-  const neckGeo = useMemo(() => createNeckGeometry(), []);
-  const upperLegGeo = useMemo(() => createUpperLegGeometry(), []);
-  const lowerLegGeo = useMemo(() => createLowerLegGeometry(), []);
-  const upperArmGeo = useMemo(() => createUpperArmGeometry(), []);
-  const lowerArmGeo = useMemo(() => createLowerArmGeometry(), []);
-  const footGeo = useMemo(() => createFootGeometry(), []);
-  const handGeo = useMemo(() => createHandGeometry(), []);
+  // ── Geometries ──
+  const bodyGeo = useMemo(() => createFullBodyGeo(cs, ws, hs, sw, heightS), [cs, ws, hs, sw, heightS]);
+  const armGeo = useMemo(() => createArmGeo(armS), [armS]);
+  const jacketGeo = useMemo(() => createJacketGeo(cs, ws, hs, sw), [cs, ws, hs, sw]);
+  const trouserLegGeo = useMemo(() => createTrouserLegGeo(), []);
+  const shoeGeo = useMemo(() => createShoeGeo(), []);
+  const sleeveGeo = useMemo(() => createSleeveGeo(armS), [armS]);
 
-  const yBase = -1.65 * heightS;
+  // Scale body height — the body geo goes from y=0 (head top) downward
+  // We need to scale and position so it stands at ground level
+  const bodyHeight = 3.5 * heightS;
+  const yBase = -bodyHeight / 2;
 
   return (
-    <group ref={group} position={[0, yBase, 0]} scale={[1, heightS, 1]}>
-      {/* ── HEAD ── */}
-      <mesh geometry={headGeo} material={skinMat} position={[0, 3.42, 0]} castShadow />
-      {/* Ears */}
-      {[-1, 1].map((s) => (
-        <mesh key={`ear-${s}`} position={[s * 0.16, 3.28, 0]} rotation={[0, s * 0.3, 0]} material={skinMat}>
-          <sphereGeometry args={[0.035, 12, 12]} />
-        </mesh>
-      ))}
-      {/* Nose */}
-      <mesh position={[0, 3.22, 0.16]} material={skinMat}>
-        <coneGeometry args={[0.02, 0.04, 8]} />
+    <group ref={group} position={[0, yBase * 0.92, 0]}>
+      {/* ── MAIN BODY ── */}
+      <mesh
+        geometry={bodyGeo}
+        material={skinMat}
+        scale={[1, bodyHeight, 1]}
+        position={[0, bodyHeight, 0]}
+        castShadow
+        receiveShadow
+      />
+
+      {/* ── HAIR (skull cap) ── */}
+      <mesh position={[0, bodyHeight * 1.002, 0]} material={hairMat}>
+        <sphereGeometry args={[0.155, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.48]} />
       </mesh>
 
-      {/* ── NECK ── */}
-      <mesh geometry={neckGeo} material={skinMat} position={[0, 2.92, 0]} scale={[1, 0.22, 1]} castShadow />
+      {/* ── EARS ── */}
+      {[-1, 1].map((s) => (
+        <mesh key={`ear${s}`} position={[s * 0.155, bodyHeight * 0.96, -0.01]} rotation={[0, s * 0.35, 0]} material={skinMat}>
+          <sphereGeometry args={[0.028, 12, 12]} />
+        </mesh>
+      ))}
 
-      {/* ── COLLAR (shirt) ── */}
+      {/* ── EYES (subtle indentations) ── */}
+      {[-1, 1].map((s) => (
+        <group key={`eye${s}`}>
+          <mesh position={[s * 0.045, bodyHeight * 0.965, 0.125]} material={skinMat}>
+            <sphereGeometry args={[0.018, 12, 12]} />
+          </mesh>
+          <mesh position={[s * 0.045, bodyHeight * 0.965, 0.13]}>
+            <sphereGeometry args={[0.008, 8, 8]} />
+            <meshPhysicalMaterial color="#2a2015" roughness={0.2} metalness={0.1} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* ── NOSE ── */}
+      <mesh position={[0, bodyHeight * 0.945, 0.145]} rotation={[0.2, 0, 0]} material={skinMat}>
+        <coneGeometry args={[0.014, 0.035, 8]} />
+      </mesh>
+      <mesh position={[0, bodyHeight * 0.935, 0.14]} material={skinMat}>
+        <sphereGeometry args={[0.016, 8, 8]} />
+      </mesh>
+
+      {/* ── LIPS ── */}
+      <mesh position={[0, bodyHeight * 0.92, 0.13]} scale={[1.8, 0.6, 0.6]}>
+        <sphereGeometry args={[0.012, 10, 8]} />
+        <meshPhysicalMaterial color="#c48a78" roughness={0.4} metalness={0} clearcoat={0.3} />
+      </mesh>
+
+      {/* ── SHIRT COLLAR ── */}
       {garments.shirt && (
-        <mesh position={[0, 2.94, 0]} material={shirtMat}>
-          <cylinderGeometry args={[0.11, 0.13, 0.06, 24]} />
+        <mesh position={[0, bodyHeight * 0.79, 0]} material={shirtMat}>
+          <cylinderGeometry args={[0.082, 0.095, 0.025, 28]} />
         </mesh>
       )}
 
       {/* ── TIE ── */}
       {garments.tie && (
         <group>
-          <mesh position={[0, 2.88, 0.16]} material={tieMat}>
-            <boxGeometry args={[0.04, 0.04, 0.025]} />
+          <mesh position={[0, bodyHeight * 0.785, 0.075]} material={tieMat}>
+            <boxGeometry args={[0.032, 0.025, 0.018]} />
           </mesh>
-          <mesh position={[0, 2.52, 0.21]} material={tieMat}>
-            <boxGeometry args={[0.05, 0.7, 0.01]} />
+          <mesh position={[0, bodyHeight * 0.65, 0.095]} material={tieMat}>
+            <boxGeometry args={[0.04, bodyHeight * 0.24, 0.008]} />
           </mesh>
-          <mesh position={[0, 2.15, 0.21]} rotation={[0, 0, Math.PI / 4]} material={tieMat}>
-            <boxGeometry args={[0.04, 0.04, 0.01]} />
+          <mesh position={[0, bodyHeight * 0.525, 0.095]} rotation={[0, 0, Math.PI / 4]} material={tieMat}>
+            <boxGeometry args={[0.03, 0.03, 0.008]} />
           </mesh>
         </group>
       )}
 
-      {/* ── TORSO ── */}
-      <mesh
-        geometry={torsoGeo}
-        material={garments.jacket ? suitMat : garments.shirt ? shirtMat : skinMat}
-        position={[0, 2.22, 0]}
-        castShadow
-      />
+      {/* ── JACKET ── */}
+      {garments.jacket && (
+        <>
+          <mesh
+            geometry={jacketGeo}
+            material={suitMat}
+            scale={[1, bodyHeight * 0.49, 1]}
+            position={[0, bodyHeight * 0.79, 0]}
+            castShadow
+          />
+          {/* Lapels */}
+          {[-1, 1].map((side) => (
+            <mesh
+              key={`lapel${side}`}
+              position={[side * 0.055 * styleConfig.lapelMult, bodyHeight * 0.73, 0.20]}
+              rotation={[0.08, side * 0.18, side * 0.12]}
+              material={suitMat} castShadow
+            >
+              <boxGeometry args={[0.075 * styleConfig.lapelMult, bodyHeight * 0.12, 0.010]} />
+            </mesh>
+          ))}
+          {/* Front placket */}
+          <mesh position={[0, bodyHeight * 0.65, 0.20]}>
+            <boxGeometry args={[0.018, bodyHeight * 0.22, 0.008]} />
+            <meshPhysicalMaterial color={color} roughness={fabricProps.roughness - 0.05} metalness={fabricProps.metalness} />
+          </mesh>
+          {/* Pocket welt */}
+          <mesh position={[-0.08, bodyHeight * 0.70, 0.19]} material={suitMat}>
+            <boxGeometry args={[0.08, 0.005, 0.012]} />
+          </mesh>
+          {/* Back vent */}
+          <mesh position={[0, bodyHeight * 0.56, -0.19]}>
+            <boxGeometry args={[0.002, bodyHeight * 0.10, 0.006]} />
+            <meshPhysicalMaterial color={color} roughness={0.55} />
+          </mesh>
+        </>
+      )}
+
+      {/* ── SHIRT (if no jacket) ── */}
+      {!garments.jacket && garments.shirt && (
+        <mesh
+          geometry={jacketGeo}
+          material={shirtMat}
+          scale={[0.97, bodyHeight * 0.48, 0.97]}
+          position={[0, bodyHeight * 0.79, 0]}
+          castShadow
+        />
+      )}
 
       {/* ── VEST ── */}
       {garments.vest && (
-        <mesh position={[0, 2.40, 0.01]} material={vestMat} castShadow>
-          <boxGeometry args={[0.36 * cs, 0.45, 0.20 * cs]} />
+        <mesh position={[0, bodyHeight * 0.67, 0.005]} material={vestMat} castShadow>
+          <boxGeometry args={[0.30 * cs, bodyHeight * 0.14, 0.17 * cs]} />
         </mesh>
       )}
-
-      {/* ── LAPELS ── */}
-      {garments.jacket && [-1, 1].map((side) => (
-        <group key={`lapel-${side}`}>
-          <mesh
-            position={[side * 0.07 * styleConfig.lapelMult, 2.68, 0.21]}
-            rotation={[0.1, side * 0.2, side * 0.15]}
-            material={suitMat} castShadow
-          >
-            <boxGeometry args={[0.09 * styleConfig.lapelMult, 0.4, 0.013]} />
-          </mesh>
-        </group>
-      ))}
 
       {/* ── BUTTONS ── */}
       {garments.jacket && styleConfig.buttonCount > 0 &&
         Array.from({ length: Math.min(styleConfig.buttonCount, 3) }).map((_, i) => {
           const isDouble = styleConfig.id === "doublebreasted";
-          const yBtn = 2.50 - i * 0.16;
+          const yBtn = bodyHeight * (0.68 - i * 0.05);
           return (
-            <group key={`btn-${i}`}>
-              <mesh position={[isDouble ? -0.04 : 0, yBtn, 0.23]} material={buttonMat} castShadow>
-                <cylinderGeometry args={[0.015, 0.015, 0.006, 16]} />
+            <group key={`btn${i}`}>
+              <mesh position={[isDouble ? -0.03 : 0, yBtn, 0.21]} material={buttonMat} castShadow>
+                <cylinderGeometry args={[0.012, 0.012, 0.005, 16]} />
               </mesh>
               {isDouble && (
-                <mesh position={[0.04, yBtn, 0.23]} material={buttonMat} castShadow>
-                  <cylinderGeometry args={[0.015, 0.015, 0.006, 16]} />
+                <mesh position={[0.03, yBtn, 0.21]} material={buttonMat} castShadow>
+                  <cylinderGeometry args={[0.012, 0.012, 0.005, 16]} />
                 </mesh>
               )}
             </group>
@@ -407,163 +488,89 @@ const Mannequin3D = forwardRef<MannequinHandle, MannequinProps>(({
         })
       }
 
-      {/* ── POCKET WELT ── */}
-      {garments.jacket && (
-        <mesh position={[-0.10, 2.55, 0.22]} rotation={[0, 0, 0.02]} material={suitMat}>
-          <boxGeometry args={[0.10, 0.006, 0.015]} />
-        </mesh>
-      )}
-
       {/* ── ARMS ── */}
-      {[-1, 1].map((side) => (
-        <group key={`arm-${side}`}>
-          {/* Upper arm */}
-          <mesh
-            geometry={upperArmGeo}
-            material={garments.jacket ? suitMat : garments.shirt ? shirtMat : skinMat}
-            position={[side * 0.26 * sw, 2.68, 0]}
-            rotation={[0, 0, side * 0.06]}
-            scale={[1, armS * 0.85, 1]}
-            castShadow
-          />
-          {/* Lower arm */}
-          <mesh
-            geometry={lowerArmGeo}
-            material={garments.jacket ? suitMat : garments.shirt ? shirtMat : skinMat}
-            position={[side * 0.29 * sw, 2.25, 0]}
-            rotation={[0, 0, side * 0.04]}
-            scale={[1, armS * 0.85, 1]}
-            castShadow
-          />
-          {/* Sleeve cuff */}
-          {garments.jacket && (
-            <mesh position={[side * 0.30 * sw, 1.85, 0]} material={suitMat}>
-              <cylinderGeometry args={[0.042, 0.038, 0.04, 20]} />
-            </mesh>
-          )}
-          {/* Hand */}
-          <mesh
-            geometry={handGeo}
-            material={skinMat}
-            position={[side * 0.31 * sw, 1.72, 0.02]}
-            rotation={[0, 0, side * 0.1]}
-            scale={[side, 1, 1]}
-            castShadow
-          />
-          {/* Fingers hint */}
-          {[0, 1, 2, 3].map((fi) => (
-            <mesh key={fi} position={[side * (0.30 * sw + side * (fi - 1.5) * 0.012), 1.62, 0.025 + fi * 0.003]} material={skinMat}>
-              <capsuleGeometry args={[0.006, 0.05, 4, 8]} />
-            </mesh>
-          ))}
-          {/* Thumb */}
-          <mesh position={[side * (0.28 * sw), 1.68, 0.045]} rotation={[0.4, side * 0.3, 0]} material={skinMat}>
-            <capsuleGeometry args={[0.007, 0.035, 4, 8]} />
-          </mesh>
-        </group>
-      ))}
+      {[-1, 1].map((side) => {
+        const armMat = garments.jacket ? suitMat : garments.shirt ? shirtMat : skinMat;
+        const armLen = bodyHeight * 0.38;
+        return (
+          <group key={`arm${side}`}>
+            {/* Full arm — skin always, then sleeve overlay */}
+            <mesh
+              geometry={armGeo}
+              material={skinMat}
+              position={[side * 0.23 * sw, bodyHeight * 0.76, 0]}
+              rotation={[0, 0, side * 0.07]}
+              scale={[1, armLen, 1]}
+              castShadow
+            />
+            {/* Sleeve overlay */}
+            {(garments.jacket || garments.shirt) && (
+              <mesh
+                geometry={sleeveGeo}
+                material={garments.jacket ? suitMat : shirtMat}
+                position={[side * 0.23 * sw, bodyHeight * 0.76, 0]}
+                rotation={[0, 0, side * 0.07]}
+                scale={[1, armLen, 1]}
+                castShadow
+              />
+            )}
+            {/* Jacket cuff buttons */}
+            {garments.jacket && [0, 1].map((bi) => (
+              <mesh key={bi} position={[side * (0.26 * sw), bodyHeight * 0.44 + bi * 0.018, 0.03]} material={buttonMat}>
+                <cylinderGeometry args={[0.007, 0.007, 0.004, 10]} />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
 
       {/* ── BELT ── */}
       {garments.belt && (
         <>
-          <mesh position={[0, 1.87, 0]} material={beltMat}>
-            <cylinderGeometry args={[0.20 * ws, 0.19 * ws, 0.035, 32]} />
+          <mesh position={[0, bodyHeight * 0.455, 0]} material={beltMat}>
+            <cylinderGeometry args={[0.175 * ws, 0.172 * ws, 0.022, 36]} />
           </mesh>
-          <mesh position={[0, 1.87, 0.20 * ws]}>
-            <boxGeometry args={[0.035, 0.03, 0.006]} />
-            <meshPhysicalMaterial color="#b8a88a" roughness={0.2} metalness={0.7} />
+          <mesh position={[0, bodyHeight * 0.455, 0.175 * ws]}>
+            <boxGeometry args={[0.028, 0.020, 0.005]} />
+            <meshPhysicalMaterial color="#b8a88a" roughness={0.18} metalness={0.75} />
           </mesh>
         </>
       )}
 
-      {/* ── LEGS ── */}
-      {[-1, 1].map((side) => (
-        <group key={`leg-${side}`}>
-          {/* Upper leg */}
+      {/* ── TROUSERS ── */}
+      {garments.trousers && [-1, 1].map((side) => (
+        <group key={`trouser${side}`}>
           <mesh
-            geometry={upperLegGeo}
-            material={garments.trousers ? trouserMat : skinMat}
-            position={[side * 0.09, 1.52, 0]}
-            scale={[hs, legS * 0.65, 1]}
+            geometry={trouserLegGeo}
+            material={trouserMat}
+            position={[side * 0.065, bodyHeight * 0.46, 0]}
+            scale={[hs, bodyHeight * 0.28, 1]}
             castShadow
           />
-          {/* Lower leg */}
-          <mesh
-            geometry={lowerLegGeo}
-            material={garments.trousers ? trouserMat : skinMat}
-            position={[side * 0.09, 1.12, 0]}
-            scale={[1, legS * 0.65, 1]}
-            castShadow
-          />
-          {/* Knee cap */}
-          <mesh position={[side * 0.09, 1.18, 0.06]} material={garments.trousers ? trouserMat : skinMat}>
-            <sphereGeometry args={[0.04, 16, 16]} />
+          {/* Crease */}
+          <mesh position={[side * 0.065, bodyHeight * 0.30, 0.06]}>
+            <boxGeometry args={[0.002, bodyHeight * 0.22, 0.002]} />
+            <meshPhysicalMaterial color={color} roughness={0.5} metalness={0.02} />
           </mesh>
-          {/* Trouser crease */}
-          {garments.trousers && (
-            <mesh position={[side * 0.09, 1.10, 0.07]}>
-              <boxGeometry args={[0.003, 0.65 * legS, 0.003]} />
-              <meshPhysicalMaterial color={color} roughness={0.5} metalness={0.02} />
-            </mesh>
-          )}
-          {/* Ankle */}
-          <mesh position={[side * 0.09, 0.78, 0]} material={garments.trousers ? trouserMat : skinMat}>
-            <sphereGeometry args={[0.045, 16, 16]} />
-          </mesh>
-
-          {/* ── FOOT / SHOE ── */}
-          {garments.shoes ? (
-            <group position={[side * 0.09, 0.68, -0.01]}>
-              <mesh material={shoeMat} castShadow>
-                <boxGeometry args={[0.10, 0.07, 0.22]} />
-              </mesh>
-              <mesh position={[0, -0.005, 0.09]} material={shoeMat}>
-                <sphereGeometry args={[0.055, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-              </mesh>
-              <mesh position={[0, -0.035, 0]}>
-                <boxGeometry args={[0.11, 0.018, 0.24]} />
-                <meshPhysicalMaterial color="#0d0d0d" roughness={0.9} />
-              </mesh>
-              <mesh position={[0, -0.035, -0.08]}>
-                <boxGeometry args={[0.09, 0.028, 0.04]} />
-                <meshPhysicalMaterial color="#0d0d0d" roughness={0.85} />
-              </mesh>
-            </group>
-          ) : (
-            <mesh
-              geometry={footGeo}
-              material={skinMat}
-              position={[side * 0.09 - 0.03, 0.63, -0.08]}
-              rotation={[-Math.PI / 2, 0, 0]}
-              scale={[side, 1, 1]}
-              castShadow
-            />
-          )}
         </group>
       ))}
 
-      {/* ── JACKET BACK VENT ── */}
-      {garments.jacket && (
-        <mesh position={[0, 2.08, -0.20]}>
-          <boxGeometry args={[0.003, 0.30, 0.008]} />
-          <meshPhysicalMaterial color={color} roughness={0.6} />
-        </mesh>
-      )}
-
-      {/* ── SHOULDER DEFINITION (subtle) ── */}
-      {[-1, 1].map((side) => (
-        <mesh key={`shoulder-${side}`} position={[side * 0.23 * sw, 2.72, 0]} material={garments.jacket ? suitMat : skinMat}>
-          <sphereGeometry args={[0.07, 16, 16]} />
-        </mesh>
+      {/* ── SHOES ── */}
+      {garments.shoes && [-1, 1].map((side) => (
+        <group key={`shoe${side}`} position={[side * 0.07, bodyHeight * 0.02, -0.02]}>
+          <mesh geometry={shoeGeo} material={shoeMat} rotation={[-Math.PI / 2, 0, 0]} scale={[side, 1, 1]} castShadow />
+          {/* Sole */}
+          <mesh position={[0, -0.008, 0.04]}>
+            <boxGeometry args={[0.10, 0.012, 0.22]} />
+            <meshPhysicalMaterial color="#0a0a0a" roughness={0.95} />
+          </mesh>
+          {/* Heel */}
+          <mesh position={[0, -0.015, -0.06]}>
+            <boxGeometry args={[0.08, 0.02, 0.04]} />
+            <meshPhysicalMaterial color="#0a0a0a" roughness={0.9} />
+          </mesh>
+        </group>
       ))}
-
-      {/* ── COLLARBONE AREA ── */}
-      <mesh position={[0, 2.82, 0.08]} material={garments.shirt ? shirtMat : skinMat} scale={[2.8 * sw, 0.3, 0.5]}>
-        <sphereGeometry args={[0.06, 16, 8]} />
-      </mesh>
     </group>
   );
-});
-
-Mannequin3D.displayName = "Mannequin3D";
-export default Mannequin3D;
+}
