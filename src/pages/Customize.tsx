@@ -122,6 +122,7 @@ const Customize = () => {
                       styleConfig={selectedStyle}
                       garments={garments}
                       bodyMeasurements={bodyMeasurements}
+                      gender={gender}
                     />
                     <ContactShadows position={[0, -1.65, 0]} opacity={0.5} scale={4} blur={2} far={3} />
                     <Environment preset="studio" />
