@@ -387,10 +387,12 @@ function createThumb(side: -1 | 1, sw: number, g: ReturnType<typeof getGenderMul
    Facial features (detailed)
    ───────────────────────────────────────────── */
 
-function FacialFeatures({ gender }: { gender: Gender }) {
+function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTone }) {
   const g = getGenderMultipliers(gender);
   const s = g.headScale;
   const isFemale = gender === "female";
+  const faceColor = skinTone.faceTint;
+  const lipColor = skinTone.lipTint;
 
   // Eyebrow shape
   const browThickness = isFemale ? 0.003 : 0.005;
