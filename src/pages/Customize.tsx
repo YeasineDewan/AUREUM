@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import { RotateCcw, DollarSign, ShoppingBag, Download } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useToast } from "@/hooks/use-toast";
-import Mannequin3D, { type Gender } from "@/components/customize/Mannequin3D";
+import Mannequin3D, { type Gender, SKIN_TONES, POSE_PRESETS, type PosePreset, type SkinTone } from "@/components/customize/Mannequin3D";
 import SceneExportListener from "@/components/customize/SceneExportListener";
 import BodyScanner from "@/components/customize/BodyScanner";
 import OutfitBuilder from "@/components/customize/OutfitBuilder";
