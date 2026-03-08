@@ -1,33 +1,21 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import {
-  ShoppingBag, Package, Truck, FileText, User, MapPin, CreditCard, Download,
-  CheckCircle2, Clock, AlertCircle, ChevronRight,
+  ShoppingBag, Package, Truck, FileText, User, MapPin, CreditCard,
+  CheckCircle2, Clock, AlertCircle, CalendarDays, Palette, Save,
 } from "lucide-react";
-
-// Mock data for customer dashboard (will connect to DB with auth)
-const mockOrders = [
-  { id: "ORD-007", items: "Bespoke 3-Piece Suit", total: 3200, status: "In Production", date: "2026-03-08", tracking: "" },
-  { id: "ORD-004", items: "Regent Overcoat", total: 1800, status: "Shipped", date: "2026-03-06", tracking: "TRK-88712" },
-  { id: "ORD-001", items: "Bespoke Suit", total: 2450, status: "Delivered", date: "2026-03-01", tracking: "TRK-88234" },
-];
-
-const mockInvoices = [
-  { id: "INV-007", amount: 3200, status: "Paid", date: "2026-03-08" },
-  { id: "INV-004", amount: 1800, status: "Paid", date: "2026-03-06" },
-  { id: "INV-001", amount: 2450, status: "Paid", date: "2026-03-01" },
-];
-
-const mockMeasurements = {
-  height: '70"', chest: '40"', waist: '34"', hips: '38"', shoulders: '18"',
-  sleeveLength: '25"', inseam: '32"', neck: '15.5"', bodyType: "Athletic",
-};
+import { useState } from "react";
 
 const statusIcon = (s: string) => {
   switch (s) {
@@ -39,7 +27,71 @@ const statusIcon = (s: string) => {
 };
 
 const CustomerDashboard = () => {
-  const totalSpent = mockOrders.reduce((s, o) => s + o.total, 0);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth");
+  }, [authLoading, user, navigate]);
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || "");
+      setPhone(profile.phone || "");
+    }
+  }, [profile]);
+
+  const { data: appointments = [] } = useQuery({
+    queryKey: ["my-appointments", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("preferred_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: fullName, phone })
+      .eq("id", user.id);
+    if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
+    else toast({ title: "Profile updated" });
+  };
+
+  const measurements = profile?.body_measurements as Record<string, string> | null;
+  const savedDesigns = (profile?.saved_designs as any[]) || [];
+
+  if (authLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="animate-pulse font-display text-xl text-muted-foreground">Loading...</div>
+    </div>;
+  }
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,19 +104,21 @@ const CustomerDashboard = () => {
               <User className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="font-display text-2xl text-foreground">My Dashboard</h1>
-              <p className="font-body text-xs text-muted-foreground">Manage your orders, invoices, measurements and preferences</p>
+              <h1 className="font-display text-2xl text-foreground">
+                {profile?.full_name ? `Welcome, ${profile.full_name}` : "My Dashboard"}
+              </h1>
+              <p className="font-body text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
-              { label: "Total Orders", value: mockOrders.length, icon: ShoppingBag },
-              { label: "Total Spent", value: `৳${totalSpent.toLocaleString()}`, icon: CreditCard },
-              { label: "In Progress", value: mockOrders.filter(o => o.status !== "Delivered").length, icon: Package },
-              { label: "Delivered", value: mockOrders.filter(o => o.status === "Delivered").length, icon: CheckCircle2 },
-            ].map(s => (
+              { label: "Appointments", value: appointments.length, icon: CalendarDays },
+              { label: "Saved Designs", value: savedDesigns.length, icon: Palette },
+              { label: "Measurements", value: measurements ? Object.keys(measurements).length : 0, icon: Package },
+              { label: "Style", value: profile?.preferred_style || "Classic", icon: CreditCard },
+            ].map((s) => (
               <Card key={s.label} className="border-border bg-card">
                 <CardContent className="p-4 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -80,73 +134,36 @@ const CustomerDashboard = () => {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="orders" className="space-y-4">
+          <Tabs defaultValue="appointments" className="space-y-4">
             <TabsList className="bg-secondary w-full grid grid-cols-4">
-              <TabsTrigger value="orders" className="text-xs"><ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Orders</TabsTrigger>
-              <TabsTrigger value="invoices" className="text-xs"><FileText className="h-3.5 w-3.5 mr-1.5" /> Invoices</TabsTrigger>
-              <TabsTrigger value="measurements" className="text-xs"><User className="h-3.5 w-3.5 mr-1.5" /> Measurements</TabsTrigger>
-              <TabsTrigger value="profile" className="text-xs"><MapPin className="h-3.5 w-3.5 mr-1.5" /> Profile</TabsTrigger>
+              <TabsTrigger value="appointments" className="text-xs"><CalendarDays className="h-3.5 w-3.5 mr-1.5" /> Appointments</TabsTrigger>
+              <TabsTrigger value="measurements" className="text-xs"><Package className="h-3.5 w-3.5 mr-1.5" /> Measurements</TabsTrigger>
+              <TabsTrigger value="designs" className="text-xs"><Palette className="h-3.5 w-3.5 mr-1.5" /> Designs</TabsTrigger>
+              <TabsTrigger value="profile" className="text-xs"><User className="h-3.5 w-3.5 mr-1.5" /> Profile</TabsTrigger>
             </TabsList>
 
-            {/* ORDERS */}
-            <TabsContent value="orders">
+            {/* APPOINTMENTS */}
+            <TabsContent value="appointments">
               <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="font-display text-base">Order History</CardTitle>
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <CardTitle className="font-display text-base">My Appointments</CardTitle>
+                  <Button variant="heroOutline" size="sm" className="text-xs" onClick={() => navigate("/book")}>
+                    Book New
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {mockOrders.map(order => (
-                    <div key={order.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/20 transition-colors">
+                  {appointments.length === 0 ? (
+                    <p className="font-body text-sm text-muted-foreground text-center py-8">No appointments yet</p>
+                  ) : appointments.map((apt: any) => (
+                    <div key={apt.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/20 transition-colors">
                       <div className="flex items-center gap-4">
-                        {statusIcon(order.status)}
+                        <CalendarDays className="h-5 w-5 text-primary" />
                         <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-body text-sm font-medium text-primary">{order.id}</p>
-                            <Badge variant={order.status === "Delivered" ? "default" : "outline"} className="text-[10px]">{order.status}</Badge>
-                          </div>
-                          <p className="font-body text-xs text-muted-foreground">{order.items}</p>
-                          <p className="font-body text-[10px] text-muted-foreground mt-0.5">{order.date}</p>
+                          <p className="font-body text-sm font-medium capitalize">{apt.appointment_type}</p>
+                          <p className="font-body text-xs text-muted-foreground">{apt.preferred_date} at {apt.preferred_time}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-display text-sm text-foreground">৳{order.total.toLocaleString()}</p>
-                        {order.tracking && (
-                          <p className="font-mono text-[10px] text-muted-foreground mt-1">
-                            <Truck className="h-3 w-3 inline mr-1" />{order.tracking}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* INVOICES */}
-            <TabsContent value="invoices">
-              <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="font-display text-base">Invoices & Payments</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {mockInvoices.map(inv => (
-                    <div key={inv.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/20 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-body text-sm font-medium">{inv.id}</p>
-                          <p className="font-body text-[10px] text-muted-foreground">{inv.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="font-body text-sm">৳{inv.amount.toLocaleString()}</p>
-                          <Badge variant="outline" className="text-[10px] text-green-400 border-green-400/30">{inv.status}</Badge>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Badge variant={apt.status === "confirmed" ? "default" : "outline"} className="text-[10px] capitalize">{apt.status}</Badge>
                     </div>
                   ))}
                 </CardContent>
@@ -160,17 +177,54 @@ const CustomerDashboard = () => {
                   <CardTitle className="font-display text-base">Saved Body Measurements</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {Object.entries(mockMeasurements).map(([key, value]) => (
-                      <div key={key} className="p-3 rounded-lg bg-secondary/30 border border-border">
-                        <p className="font-body text-[10px] tracking-widest uppercase text-muted-foreground">{key.replace(/([A-Z])/g, " $1")}</p>
-                        <p className="font-display text-lg text-foreground mt-1">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <Button variant="heroOutline" className="w-full mt-4 text-xs">
+                  {measurements && Object.keys(measurements).length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {Object.entries(measurements).map(([key, value]) => (
+                        <div key={key} className="p-3 rounded-lg bg-secondary/30 border border-border">
+                          <p className="font-body text-[10px] tracking-widest uppercase text-muted-foreground">
+                            {key.replace(/([A-Z])/g, " $1")}
+                          </p>
+                          <p className="font-display text-lg text-foreground mt-1">{String(value)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="font-body text-sm text-muted-foreground text-center py-8">
+                      No measurements saved yet. Use the AI Body Scanner in the Customize section.
+                    </p>
+                  )}
+                  <Button variant="heroOutline" className="w-full mt-4 text-xs" onClick={() => navigate("/customize")}>
                     Update Measurements via AI Scanner
                   </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* SAVED DESIGNS */}
+            <TabsContent value="designs">
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="font-display text-base">Saved Designs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {savedDesigns.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Palette className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="font-body text-sm text-muted-foreground">No saved designs yet</p>
+                      <Button variant="heroOutline" className="mt-3 text-xs" onClick={() => navigate("/customize")}>
+                        Start Customizing
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      {savedDesigns.map((design: any, i: number) => (
+                        <div key={i} className="p-4 rounded-lg border border-border bg-secondary/20">
+                          <p className="font-display text-sm">{design.name || `Design ${i + 1}`}</p>
+                          <p className="font-body text-[10px] text-muted-foreground mt-1">{design.garmentType || "Custom"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -179,26 +233,26 @@ const CustomerDashboard = () => {
             <TabsContent value="profile">
               <Card className="border-border bg-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className="font-display text-base">Profile & Addresses</CardTitle>
+                  <CardTitle className="font-display text-base">Profile Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-lg border border-border">
-                      <p className="font-body text-[10px] tracking-widest uppercase text-muted-foreground mb-2">Personal Info</p>
-                      <p className="font-body text-sm text-foreground">Customer Name</p>
-                      <p className="font-body text-xs text-muted-foreground">customer@email.com</p>
-                      <p className="font-body text-xs text-muted-foreground">+880 1XXXXXXXXX</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-body text-[10px] tracking-widest uppercase text-muted-foreground mb-1.5 block">Full Name</label>
+                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="bg-secondary border-border" />
                     </div>
-                    <div className="p-4 rounded-lg border border-border">
-                      <p className="font-body text-[10px] tracking-widest uppercase text-muted-foreground mb-2">Shipping Address</p>
-                      <p className="font-body text-sm text-foreground">House 12, Road 5</p>
-                      <p className="font-body text-xs text-muted-foreground">Dhanmondi, Dhaka 1205</p>
-                      <p className="font-body text-xs text-muted-foreground">Bangladesh</p>
+                    <div>
+                      <label className="font-body text-[10px] tracking-widest uppercase text-muted-foreground mb-1.5 block">Phone</label>
+                      <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-secondary border-border" />
                     </div>
                   </div>
-                  <p className="font-body text-[10px] text-muted-foreground text-center">
-                    Sign in to save your profile data and sync across devices
-                  </p>
+                  <div className="p-4 rounded-lg border border-border bg-secondary/20">
+                    <p className="font-body text-[10px] tracking-widest uppercase text-muted-foreground mb-1">Email</p>
+                    <p className="font-body text-sm text-foreground">{user.email}</p>
+                  </div>
+                  <Button variant="hero" className="w-full text-xs" onClick={handleSaveProfile}>
+                    <Save className="h-3.5 w-3.5 mr-2" /> Save Changes
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>

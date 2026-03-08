@@ -2,3 +2,9 @@ project_id = "xfbcroapgoudsuochbpw"
 
 [functions.analyze-body]
 verify_jwt = false
+
+[functions.style-recommendations]
+verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false

@@ -14,6 +14,7 @@ const Navbar = () => {
     { label: "Collections", href: "/products" },
     { label: "Customize", href: "/customize" },
     { label: "Bespoke", href: "/bespoke" },
+    { label: "Style Advisor", href: "/style-advisor" },
     { label: "Book", href: "/book" },
   ];
 
