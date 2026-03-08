@@ -692,13 +692,40 @@ export default function Mannequin3D({
     return measurementsToMorphTargets(bodyMeasurements);
   }, [bodyMeasurements]);
 
-  useFrame((state) => {
+  // ── Animated pose refs ──
+  const targetPose = useMemo(() => getPoseTransforms(pose), [pose]);
+  const leftArmRef = useRef<THREE.Group>(null);
+  const rightArmRef = useRef<THREE.Group>(null);
+  const leftHandRef = useRef<THREE.Group>(null);
+  const rightHandRef = useRef<THREE.Group>(null);
+  const leftSleeveRef = useRef<THREE.Group>(null);
+  const rightSleeveRef = useRef<THREE.Group>(null);
+  const leftSleeveAltRef = useRef<THREE.Group>(null);
+  const rightSleeveAltRef = useRef<THREE.Group>(null);
+
+  const LERP_SPEED = 5; // higher = faster transition
+
+  useFrame((state, delta) => {
     if (group.current) {
       group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.15) * 0.04;
     }
+    const t = 1 - Math.exp(-LERP_SPEED * delta);
+    const lerpGroup = (ref: React.RefObject<THREE.Group | null>, targetPos: [number, number, number], targetRot: [number, number, number]) => {
+      if (!ref.current) return;
+      ref.current.position.lerp(new THREE.Vector3(...targetPos), t);
+      ref.current.rotation.x += (targetRot[0] - ref.current.rotation.x) * t;
+      ref.current.rotation.y += (targetRot[1] - ref.current.rotation.y) * t;
+      ref.current.rotation.z += (targetRot[2] - ref.current.rotation.z) * t;
+    };
+    lerpGroup(leftArmRef, targetPose.leftArmPos, targetPose.leftArmRot);
+    lerpGroup(rightArmRef, targetPose.rightArmPos, targetPose.rightArmRot);
+    lerpGroup(leftHandRef, targetPose.leftArmPos, targetPose.leftHandRot);
+    lerpGroup(rightHandRef, targetPose.rightArmPos, targetPose.rightHandRot);
+    lerpGroup(leftSleeveRef, targetPose.leftArmPos, targetPose.leftArmRot);
+    lerpGroup(rightSleeveRef, targetPose.rightArmPos, targetPose.rightArmRot);
+    lerpGroup(leftSleeveAltRef, targetPose.leftArmPos, targetPose.leftArmRot);
+    lerpGroup(rightSleeveAltRef, targetPose.rightArmPos, targetPose.rightArmRot);
   });
-
-  const poseT = useMemo(() => getPoseTransforms(pose), [pose]);
 
   // ── Materials ──
   const skinMat = useMemo(() => new THREE.MeshPhysicalMaterial({
