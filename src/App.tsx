@@ -29,6 +29,7 @@ import AdminInvoices from "./pages/admin/AdminInvoices";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminShipments from "./pages/admin/AdminShipments";
 import AdminFraud from "./pages/admin/AdminFraud";
+import AdminChatbot from "./pages/admin/AdminChatbot";
 
 const queryClient = new QueryClient();
 
