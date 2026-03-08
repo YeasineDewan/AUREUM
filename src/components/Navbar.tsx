@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const navLinks = ["Collections", "Customize", "Bespoke", "About"];
+  const navLinks = [
+    { label: "Collections", href: "/#collections" },
+    { label: "Customize", href: "/customize" },
+    { label: "Bespoke", href: "/bespoke" },
+    { label: "Admin", href: "/admin" },
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
