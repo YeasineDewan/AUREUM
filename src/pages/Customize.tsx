@@ -452,6 +452,8 @@ const Customize = () => {
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0]);
 
+  const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium;
+
   const reset = () => {
     setSelectedFabric(FABRICS[0]);
     setSelectedColor(COLORS[0]);
