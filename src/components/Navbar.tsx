@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const navLinks = ["Collections", "Customize", "Bespoke", "About"];
+  const navLinks = [
+    { label: "Collections", href: "/#collections" },
+    { label: "Customize", href: "/customize" },
+    { label: "Bespoke", href: "/bespoke" },
+    { label: "Admin", href: "/admin" },
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -19,11 +24,11 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <a
-              key={link}
-              href={`#${link.toLowerCase()}`}
+              key={link.label}
+              href={link.href}
               className="font-body text-xs tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors duration-300"
             >
-              {link}
+              {link.label}
             </a>
           ))}
         </div>
@@ -55,12 +60,12 @@ const Navbar = () => {
         <div className="md:hidden bg-background border-t border-border px-6 py-8 space-y-6">
           {navLinks.map((link) => (
             <a
-              key={link}
-              href={`#${link.toLowerCase()}`}
+              key={link.label}
+              href={link.href}
               className="block font-body text-sm tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              {link}
+              {link.label}
             </a>
           ))}
           <div className="flex gap-4 pt-4 border-t border-border">
