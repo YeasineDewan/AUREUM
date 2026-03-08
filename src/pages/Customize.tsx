@@ -136,15 +136,15 @@ const Customize = () => {
                   <CardTitle className="text-sm">Pose</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {POSE_PRESETS.map((p) => (
                       <button
                         key={p.id}
                         onClick={() => setPose(p.id)}
-                        className={`flex-1 py-2.5 px-2 text-xs font-body font-medium transition-all flex items-center justify-center gap-1 ${
+                        className={`py-2 px-2 text-xs font-body font-medium transition-all flex items-center justify-center gap-1 rounded-md border ${
                           pose === p.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-card text-muted-foreground hover:text-foreground"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-card text-muted-foreground hover:text-foreground border-border"
                         }`}
                       >
                         <span>{p.icon}</span> {p.name}

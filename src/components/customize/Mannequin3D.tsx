@@ -8,7 +8,7 @@ import { measurementsToMorphTargets } from "@/types/customize";
    Pose & Skin Tone types
    ───────────────────────────────────────────── */
 
-export type PosePreset = "standing" | "relaxed" | "akimbo";
+export type PosePreset = "standing" | "relaxed" | "akimbo" | "walking" | "pockets" | "crossed";
 
 export interface SkinTone {
   id: string;
@@ -30,7 +30,10 @@ export const SKIN_TONES: SkinTone[] = [
 export const POSE_PRESETS: { id: PosePreset; name: string; icon: string }[] = [
   { id: "standing", name: "Standing", icon: "🧍" },
   { id: "relaxed",  name: "Relaxed",  icon: "😌" },
-  { id: "akimbo",   name: "Arms Akimbo", icon: "🦸" },
+  { id: "akimbo",   name: "Akimbo", icon: "🦸" },
+  { id: "walking",  name: "Walking", icon: "🚶" },
+  { id: "pockets",  name: "Pockets", icon: "🧥" },
+  { id: "crossed",  name: "Crossed", icon: "🤞" },
 ];
 
 function getPoseTransforms(pose: PosePreset) {
@@ -53,6 +56,36 @@ function getPoseTransforms(pose: PosePreset) {
         rightHandRot:[0.3, -0.3, -0.6] as [number, number, number],
         leftArmPos:  [-0.03, 0.02, 0.02] as [number, number, number],
         rightArmPos: [0.03, 0.02, 0.02] as [number, number, number],
+        hipTilt: 0,
+      };
+    case "walking":
+      return {
+        leftArmRot:  [0.25, 0, 0.08] as [number, number, number],
+        rightArmRot: [-0.25, 0, -0.08] as [number, number, number],
+        leftHandRot: [0.25, 0, 0.08] as [number, number, number],
+        rightHandRot:[-0.25, 0, -0.08] as [number, number, number],
+        leftArmPos:  [0, 0, 0.02] as [number, number, number],
+        rightArmPos: [0, 0, -0.02] as [number, number, number],
+        hipTilt: 0.03,
+      };
+    case "pockets":
+      return {
+        leftArmRot:  [0.20, 0.15, 0.30] as [number, number, number],
+        rightArmRot: [0.20, -0.15, -0.30] as [number, number, number],
+        leftHandRot: [0.35, 0.20, 0.40] as [number, number, number],
+        rightHandRot:[0.35, -0.20, -0.40] as [number, number, number],
+        leftArmPos:  [-0.02, -0.02, 0.03] as [number, number, number],
+        rightArmPos: [0.02, -0.02, 0.03] as [number, number, number],
+        hipTilt: 0.01,
+      };
+    case "crossed":
+      return {
+        leftArmRot:  [0.45, 0.35, 0.40] as [number, number, number],
+        rightArmRot: [0.45, -0.35, -0.40] as [number, number, number],
+        leftHandRot: [0.55, 0.40, 0.50] as [number, number, number],
+        rightHandRot:[0.55, -0.40, -0.50] as [number, number, number],
+        leftArmPos:  [-0.02, 0.04, 0.06] as [number, number, number],
+        rightArmPos: [0.02, 0.04, 0.06] as [number, number, number],
         hipTilt: 0,
       };
     default:
