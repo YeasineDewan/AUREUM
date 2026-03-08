@@ -72,6 +72,36 @@ const Customize = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Body Scanner + Outfit Builder */}
             <div className="lg:col-span-3 space-y-4 order-2 lg:order-1">
+              {/* Gender Toggle */}
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Body Type</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex rounded-lg border border-border overflow-hidden">
+                    <button
+                      onClick={() => setGender("male")}
+                      className={`flex-1 py-2.5 px-3 text-xs font-body font-medium transition-all ${
+                        gender === "male"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      ♂ Male
+                    </button>
+                    <button
+                      onClick={() => setGender("female")}
+                      className={`flex-1 py-2.5 px-3 text-xs font-body font-medium transition-all ${
+                        gender === "female"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      ♀ Female
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
               <BodyScanner onMeasurements={setBodyMeasurements} measurements={bodyMeasurements} />
               <OutfitBuilder visibility={garments} onChange={setGarments} />
             </div>
