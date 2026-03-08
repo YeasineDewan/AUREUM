@@ -14,17 +14,17 @@ export interface SkinTone {
   id: string;
   name: string;
   hex: string;
-  faceTint: string;   // slightly darker for facial shadows
+  faceTint: string;
   lipTint: string;
 }
 
 export const SKIN_TONES: SkinTone[] = [
-  { id: "fair",     name: "Fair",       hex: "#f5d6c3", faceTint: "#e8c4a8", lipTint: "#d4888a" },
-  { id: "light",    name: "Light",      hex: "#d4a986", faceTint: "#c49070", lipTint: "#c47068" },
-  { id: "medium",   name: "Medium",     hex: "#c68642", faceTint: "#a8703a", lipTint: "#a05848" },
-  { id: "tan",      name: "Tan",        hex: "#a0724a", faceTint: "#8a5e3a", lipTint: "#8a4a3a" },
-  { id: "brown",    name: "Brown",      hex: "#8d5524", faceTint: "#724420", lipTint: "#6a3828" },
-  { id: "dark",     name: "Dark",       hex: "#5c3310", faceTint: "#4a280e", lipTint: "#4a2a1a" },
+  { id: "fair",   name: "Fair",   hex: "#f5d6c3", faceTint: "#e8c4a8", lipTint: "#d4888a" },
+  { id: "light",  name: "Light",  hex: "#d4a986", faceTint: "#c49070", lipTint: "#c47068" },
+  { id: "medium", name: "Medium", hex: "#c68642", faceTint: "#a8703a", lipTint: "#a05848" },
+  { id: "tan",    name: "Tan",    hex: "#a0724a", faceTint: "#8a5e3a", lipTint: "#8a4a3a" },
+  { id: "brown",  name: "Brown",  hex: "#8d5524", faceTint: "#724420", lipTint: "#6a3828" },
+  { id: "dark",   name: "Dark",   hex: "#5c3310", faceTint: "#4a280e", lipTint: "#4a2a1a" },
 ];
 
 export const POSE_PRESETS: { id: PosePreset; name: string; icon: string }[] = [
@@ -55,7 +55,7 @@ function getPoseTransforms(pose: PosePreset) {
         rightArmPos: [0.03, 0.02, 0.02] as [number, number, number],
         hipTilt: 0,
       };
-    default: // standing
+    default:
       return {
         leftArmRot:  [0, 0, 0] as [number, number, number],
         rightArmRot: [0, 0, 0] as [number, number, number],
@@ -69,12 +69,12 @@ function getPoseTransforms(pose: PosePreset) {
 }
 
 /* ─────────────────────────────────────────────
-   Helpers
+   Geometry Helpers
    ───────────────────────────────────────────── */
 
 type Section = { y: number; rx: number; rz: number; cx?: number; cz?: number };
 
-function buildLimbMesh(sections: Section[], radialSegs = 24, smooth = true): THREE.BufferGeometry {
+function buildLimbMesh(sections: Section[], radialSegs = 24): THREE.BufferGeometry {
   const verts: number[] = [];
   const normals: number[] = [];
   const uvs: number[] = [];
@@ -107,20 +107,21 @@ function buildLimbMesh(sections: Section[], radialSegs = 24, smooth = true): THR
   geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geo.setIndex(indices);
-  if (smooth) geo.computeVertexNormals();
+  geo.computeVertexNormals();
   return geo;
 }
 
-function interpolateSections(sections: Section[], subdivisions = 3) {
+/** Cosine-interpolate between key sections for smooth transitions */
+function interpolateSections(sections: Section[], subdivisions = 4): Section[] {
   const result: Section[] = [];
   for (let i = 0; i < sections.length - 1; i++) {
     const a = sections[i];
     const b = sections[i + 1];
     for (let t = 0; t < subdivisions; t++) {
       const f = t / subdivisions;
-      const sf = 0.5 - 0.5 * Math.cos(f * Math.PI);
+      const sf = 0.5 - 0.5 * Math.cos(f * Math.PI); // smooth step
       result.push({
-        y: a.y + (b.y - a.y) * sf,
+        y:  a.y + (b.y - a.y) * sf,
         rx: a.rx + (b.rx - a.rx) * sf,
         rz: a.rz + (b.rz - a.rz) * sf,
         cx: (a.cx ?? 0) + ((b.cx ?? 0) - (a.cx ?? 0)) * sf,
@@ -160,21 +161,24 @@ function useFabricTexture(fabricId: string) {
 }
 
 /* ─────────────────────────────────────────────
-   Gender-aware body proportions
+   Gender-aware body multipliers
+   (Tuned to match reference mannequin proportions)
    ───────────────────────────────────────────── */
 export type Gender = "male" | "female";
 
 function getGenderMultipliers(gender: Gender) {
   if (gender === "female") {
     return {
-      shoulderW: 0.88,   // narrower shoulders
-      chestDepth: 1.12,  // bust
-      waistNarrow: 0.88, // narrower waist
-      hipWide: 1.15,     // wider hips
-      armThin: 0.88,
-      legThin: 0.92,
-      neckThin: 0.85,
-      headScale: 0.95,
+      shoulderW: 0.86,
+      chestDepth: 1.15,
+      waistNarrow: 0.82,
+      hipWide: 1.20,
+      armThin: 0.85,
+      legThin: 0.90,
+      neckThin: 0.82,
+      headScale: 0.96,
+      bustProtrusion: 0.035,  // forward bust offset
+      buttockProtrusion: 0.018,
     };
   }
   return {
@@ -186,179 +190,244 @@ function getGenderMultipliers(gender: Gender) {
     legThin: 1.0,
     neckThin: 1.0,
     headScale: 1.0,
+    bustProtrusion: 0,
+    buttockProtrusion: 0.005,
   };
 }
 
 /* ─────────────────────────────────────────────
-   Body part geometry builders
+   Body part geometry — refined anatomy
    ───────────────────────────────────────────── */
-
-function createTorso(cs: number, ws: number, hs: number, sw: number, g: ReturnType<typeof getGenderMultipliers>) {
-  const sections = interpolateSections([
-    { y: 1.42, rx: 0.06 * g.neckThin, rz: 0.055 * g.neckThin },
-    { y: 1.38, rx: 0.10 * g.shoulderW, rz: 0.07 },
-    { y: 1.32, rx: 0.21 * sw * g.shoulderW, rz: 0.11 },
-    { y: 1.25, rx: 0.19 * cs * g.shoulderW, rz: 0.115 * cs * g.chestDepth },
-    { y: 1.18, rx: 0.185 * cs * g.shoulderW, rz: 0.12 * cs * g.chestDepth },
-    { y: 1.10, rx: 0.17 * cs, rz: 0.11 * cs * g.chestDepth },
-    { y: 1.02, rx: 0.155 * ws * g.waistNarrow, rz: 0.10 * ws },
-    { y: 0.94, rx: 0.135 * ws * g.waistNarrow, rz: 0.09 * ws },
-    { y: 0.88, rx: 0.145 * hs * g.hipWide, rz: 0.095 * hs },
-    { y: 0.82, rx: 0.17 * hs * g.hipWide, rz: 0.11 * hs },
-    { y: 0.76, rx: 0.19 * hs * g.hipWide, rz: 0.12 * hs },
-    { y: 0.70, rx: 0.185 * hs * g.hipWide, rz: 0.115 * hs },
-    { y: 0.64, rx: 0.16 * g.hipWide, rz: 0.10 },
-  ], 4);
-  return buildLimbMesh(sections, 36);
-}
 
 function createHead(g: ReturnType<typeof getGenderMultipliers>) {
   const s = g.headScale;
   const sections = interpolateSections([
-    { y: 1.72, rx: 0.005, rz: 0.005 },
-    { y: 1.71, rx: 0.08 * s, rz: 0.085 * s },
-    { y: 1.68, rx: 0.095 * s, rz: 0.10 * s },
-    { y: 1.65, rx: 0.098 * s, rz: 0.105 * s },
-    // Brow ridge
-    { y: 1.625, rx: 0.099 * s, rz: 0.103 * s },
-    { y: 1.62, rx: 0.097 * s, rz: 0.10 * s },
-    // Temple
-    { y: 1.605, rx: 0.096 * s, rz: 0.098 * s },
-    // Cheekbone
-    { y: 1.59, rx: 0.092 * s, rz: 0.09 * s },
-    // Mid-face
-    { y: 1.575, rx: 0.086 * s, rz: 0.085 * s },
+    // Crown
+    { y: 1.74, rx: 0.006, rz: 0.006 },
+    { y: 1.73, rx: 0.06 * s, rz: 0.065 * s },
+    { y: 1.715, rx: 0.088 * s, rz: 0.092 * s },
+    // Top of head — wider
+    { y: 1.70, rx: 0.096 * s, rz: 0.10 * s },
+    { y: 1.685, rx: 0.099 * s, rz: 0.104 * s },
+    // Forehead
+    { y: 1.67, rx: 0.100 * s, rz: 0.106 * s },
+    // Brow ridge — slight overhang
+    { y: 1.655, rx: 0.101 * s, rz: 0.105 * s, cz: 0.003 },
+    { y: 1.645, rx: 0.100 * s, rz: 0.103 * s, cz: 0.004 },
+    // Temple — narrower
+    { y: 1.63, rx: 0.098 * s, rz: 0.100 * s, cz: 0.003 },
+    // Cheekbone — widest part of face
+    { y: 1.615, rx: 0.095 * s, rz: 0.094 * s, cz: 0.004 },
+    { y: 1.60, rx: 0.092 * s, rz: 0.088 * s, cz: 0.005 },
+    // Mid-face — starts narrowing
+    { y: 1.585, rx: 0.086 * s, rz: 0.082 * s, cz: 0.005 },
     // Jaw angle
-    { y: 1.555, rx: 0.078 * s, rz: 0.078 * s },
-    { y: 1.54, rx: 0.068 * s, rz: 0.070 * s },
-    // Chin
-    { y: 1.525, rx: 0.050 * s, rz: 0.055 * s, cz: 0.008 },
-    { y: 1.515, rx: 0.035 * s, rz: 0.040 * s, cz: 0.012 },
-    { y: 1.505, rx: 0.020, rz: 0.025, cz: 0.015 },
+    { y: 1.57, rx: 0.080 * s, rz: 0.076 * s, cz: 0.004 },
+    { y: 1.555, rx: 0.072 * s, rz: 0.070 * s, cz: 0.003 },
+    // Lower jaw — tapers
+    { y: 1.545, rx: 0.062 * s, rz: 0.062 * s, cz: 0.005 },
+    { y: 1.535, rx: 0.050 * s, rz: 0.054 * s, cz: 0.008 },
+    // Chin — forward protrusion
+    { y: 1.525, rx: 0.038 * s, rz: 0.044 * s, cz: 0.012 },
+    { y: 1.518, rx: 0.028 * s, rz: 0.035 * s, cz: 0.014 },
+    { y: 1.512, rx: 0.018, rz: 0.025, cz: 0.013 },
   ], 4);
-  return buildLimbMesh(sections, 32);
+  return buildLimbMesh(sections, 36);
 }
 
 function createNeck(g: ReturnType<typeof getGenderMultipliers>) {
   const n = g.neckThin;
   const sections = interpolateSections([
-    { y: 1.505, rx: 0.035 * n, rz: 0.035 * n },
-    { y: 1.49, rx: 0.045 * n, rz: 0.042 * n },
-    { y: 1.47, rx: 0.05 * n, rz: 0.048 * n },
-    { y: 1.45, rx: 0.055 * n, rz: 0.052 * n },
-    { y: 1.43, rx: 0.06 * n, rz: 0.055 * n },
-  ], 3);
-  return buildLimbMesh(sections, 20);
+    { y: 1.512, rx: 0.030 * n, rz: 0.032 * n },
+    { y: 1.50, rx: 0.042 * n, rz: 0.040 * n },
+    { y: 1.485, rx: 0.048 * n, rz: 0.046 * n },
+    { y: 1.47, rx: 0.052 * n, rz: 0.050 * n },
+    // Slight Adam's apple for male
+    { y: 1.455, rx: 0.054 * n, rz: 0.052 * n, cz: g.headScale === 1.0 ? 0.004 : 0 },
+    { y: 1.44, rx: 0.058 * n, rz: 0.055 * n },
+    // Neck base widens into shoulders
+    { y: 1.425, rx: 0.065 * n, rz: 0.060 * n },
+    { y: 1.41, rx: 0.072 * n, rz: 0.065 * n },
+  ], 4);
+  return buildLimbMesh(sections, 24);
+}
+
+function createTorso(cs: number, ws: number, hs: number, sw: number, g: ReturnType<typeof getGenderMultipliers>) {
+  const bp = g.bustProtrusion;
+  const bk = g.buttockProtrusion;
+  const isFemale = g.shoulderW < 1;
+
+  const sections = interpolateSections([
+    // Neck base
+    { y: 1.42, rx: 0.065 * g.neckThin, rz: 0.060 * g.neckThin },
+    // Trapezius / collar area
+    { y: 1.39, rx: 0.12 * g.shoulderW, rz: 0.075 },
+    // Shoulder line
+    { y: 1.35, rx: 0.215 * sw * g.shoulderW, rz: 0.10 },
+    // Below shoulder — deltoid insertion
+    { y: 1.31, rx: 0.21 * sw * g.shoulderW, rz: 0.105 },
+    // Upper chest — collarbone area
+    { y: 1.28, rx: 0.195 * cs * g.shoulderW, rz: 0.112 * cs * g.chestDepth, cz: bp * 0.3 },
+    // Mid chest — bust line for female
+    { y: 1.24, rx: 0.190 * cs * g.shoulderW, rz: 0.120 * cs * g.chestDepth, cz: bp * 0.8 },
+    // Bust apex (most forward for female)
+    { y: 1.20, rx: 0.185 * cs * g.shoulderW, rz: 0.125 * cs * g.chestDepth, cz: bp },
+    // Under-bust
+    { y: 1.16, rx: 0.178 * cs * (isFemale ? 0.92 : 1), rz: 0.115 * cs * g.chestDepth, cz: bp * 0.5 },
+    // Ribcage
+    { y: 1.12, rx: 0.170 * cs * (isFemale ? 0.90 : 1), rz: 0.108 * cs },
+    { y: 1.08, rx: 0.160 * cs * (isFemale ? 0.88 : 1), rz: 0.102 * cs },
+    // Waist — narrowest point
+    { y: 1.03, rx: 0.145 * ws * g.waistNarrow, rz: 0.092 * ws },
+    { y: 0.98, rx: 0.135 * ws * g.waistNarrow, rz: 0.088 * ws },
+    // Navel area
+    { y: 0.94, rx: 0.140 * ws * g.waistNarrow, rz: 0.090 * ws, cz: -bk * 0.2 },
+    // Low belly — starts widening to hips
+    { y: 0.90, rx: 0.155 * hs * g.hipWide, rz: 0.098 * hs, cz: -bk * 0.4 },
+    // Hip bone
+    { y: 0.86, rx: 0.175 * hs * g.hipWide, rz: 0.110 * hs, cz: -bk * 0.6 },
+    // Widest hip
+    { y: 0.82, rx: 0.195 * hs * g.hipWide, rz: 0.125 * hs, cz: -bk * 0.8 },
+    // Upper buttock
+    { y: 0.78, rx: 0.200 * hs * g.hipWide, rz: 0.130 * hs, cz: -bk },
+    // Mid buttock — fullest
+    { y: 0.74, rx: 0.198 * hs * g.hipWide, rz: 0.128 * hs, cz: -bk * 0.9 },
+    // Lower buttock
+    { y: 0.70, rx: 0.190 * hs * g.hipWide, rz: 0.120 * hs, cz: -bk * 0.5 },
+    // Groin / upper thigh transition
+    { y: 0.66, rx: 0.170 * g.hipWide, rz: 0.108, cz: -bk * 0.2 },
+    { y: 0.62, rx: 0.155 * g.hipWide, rz: 0.098 },
+  ], 5);
+  return buildLimbMesh(sections, 40);
 }
 
 function createLeg(side: -1 | 1, hs: number, g: ReturnType<typeof getGenderMultipliers>) {
-  const hipOffset = side * 0.085 * g.hipWide;
+  const hipOff = side * 0.092 * g.hipWide;
   const t = g.legThin;
   const sections = interpolateSections([
-    { y: 0.68, rx: 0.085 * hs * t, rz: 0.09 * hs * t, cx: hipOffset },
-    { y: 0.64, rx: 0.082 * t, rz: 0.085 * t, cx: hipOffset },
-    { y: 0.58, rx: 0.078 * t, rz: 0.08 * t, cx: hipOffset * 0.9 },
-    { y: 0.52, rx: 0.072 * t, rz: 0.074 * t, cx: hipOffset * 0.8 },
-    { y: 0.46, rx: 0.065 * t, rz: 0.067 * t, cx: hipOffset * 0.7 },
-    { y: 0.40, rx: 0.055 * t, rz: 0.058 * t, cx: hipOffset * 0.65 },
-    { y: 0.36, rx: 0.050 * t, rz: 0.055 * t, cx: hipOffset * 0.6 },
-    { y: 0.34, rx: 0.048 * t, rz: 0.053 * t, cx: hipOffset * 0.6 },
-    { y: 0.31, rx: 0.050 * t, rz: 0.052 * t, cx: hipOffset * 0.6 },
-    { y: 0.27, rx: 0.052 * t, rz: 0.050 * t, cx: hipOffset * 0.55 },
-    { y: 0.22, rx: 0.048 * t, rz: 0.046 * t, cx: hipOffset * 0.5 },
-    { y: 0.16, rx: 0.040 * t, rz: 0.038 * t, cx: hipOffset * 0.5 },
-    { y: 0.10, rx: 0.034 * t, rz: 0.032 * t, cx: hipOffset * 0.5 },
-    { y: 0.06, rx: 0.030, rz: 0.028, cx: hipOffset * 0.5 },
-    { y: 0.04, rx: 0.028, rz: 0.026, cx: hipOffset * 0.5 },
-    { y: 0.02, rx: 0.032, rz: 0.030, cx: hipOffset * 0.5 },
-  ], 3);
-  return buildLimbMesh(sections, 20);
+    // Upper thigh — connects to torso
+    { y: 0.66, rx: 0.090 * hs * t, rz: 0.095 * hs * t, cx: hipOff * 0.95 },
+    { y: 0.62, rx: 0.086 * t, rz: 0.090 * t, cx: hipOff * 0.90 },
+    // Mid thigh
+    { y: 0.56, rx: 0.080 * t, rz: 0.082 * t, cx: hipOff * 0.80 },
+    { y: 0.50, rx: 0.074 * t, rz: 0.076 * t, cx: hipOff * 0.72 },
+    // Lower thigh — tapers toward knee
+    { y: 0.44, rx: 0.066 * t, rz: 0.068 * t, cx: hipOff * 0.65 },
+    // Knee — slightly wider front-to-back
+    { y: 0.39, rx: 0.054 * t, rz: 0.058 * t, cx: hipOff * 0.60 },
+    { y: 0.37, rx: 0.050 * t, rz: 0.056 * t, cx: hipOff * 0.58 },
+    { y: 0.35, rx: 0.048 * t, rz: 0.055 * t, cx: hipOff * 0.57 },
+    // Upper calf — muscular bulge
+    { y: 0.32, rx: 0.052 * t, rz: 0.054 * t, cx: hipOff * 0.55, cz: -0.006 },
+    { y: 0.29, rx: 0.054 * t, rz: 0.052 * t, cx: hipOff * 0.53, cz: -0.008 },
+    // Mid calf
+    { y: 0.25, rx: 0.050 * t, rz: 0.048 * t, cx: hipOff * 0.50, cz: -0.005 },
+    // Lower calf — tapers
+    { y: 0.20, rx: 0.043 * t, rz: 0.040 * t, cx: hipOff * 0.48 },
+    { y: 0.15, rx: 0.036 * t, rz: 0.034 * t, cx: hipOff * 0.47 },
+    // Ankle — narrowest
+    { y: 0.10, rx: 0.030 * t, rz: 0.028 * t, cx: hipOff * 0.47 },
+    { y: 0.07, rx: 0.028, rz: 0.026, cx: hipOff * 0.47 },
+    // Ankle bone bumps
+    { y: 0.05, rx: 0.030, rz: 0.027, cx: hipOff * 0.47 },
+    { y: 0.03, rx: 0.032, rz: 0.030, cx: hipOff * 0.47 },
+  ], 4);
+  return buildLimbMesh(sections, 22);
 }
 
 function createFoot(side: -1 | 1, g: ReturnType<typeof getGenderMultipliers>) {
-  const cx = side * 0.085 * g.hipWide * 0.5;
+  const cx = side * 0.092 * g.hipWide * 0.47;
   const sections = interpolateSections([
-    { y: 0.025, rx: 0.032, rz: 0.030, cx },
-    { y: 0.015, rx: 0.035, rz: 0.045, cx, cz: 0.01 },
-    { y: 0.005, rx: 0.038, rz: 0.06, cx, cz: 0.02 },
-    { y: 0.0, rx: 0.037, rz: 0.065, cx, cz: 0.025 },
-    { y: -0.008, rx: 0.030, rz: 0.055, cx, cz: 0.03 },
-    { y: -0.015, rx: 0.015, rz: 0.04, cx, cz: 0.035 },
+    // Ankle connection
+    { y: 0.035, rx: 0.032, rz: 0.030, cx },
+    { y: 0.025, rx: 0.034, rz: 0.040, cx, cz: 0.008 },
+    // Heel
+    { y: 0.015, rx: 0.036, rz: 0.052, cx, cz: 0.015 },
+    // Arch area
+    { y: 0.008, rx: 0.038, rz: 0.060, cx, cz: 0.022 },
+    // Ball of foot — widest
+    { y: 0.003, rx: 0.040, rz: 0.068, cx, cz: 0.028 },
+    // Toe area
+    { y: 0.0, rx: 0.038, rz: 0.065, cx, cz: 0.035 },
+    { y: -0.005, rx: 0.034, rz: 0.058, cx, cz: 0.040 },
+    { y: -0.010, rx: 0.025, rz: 0.045, cx, cz: 0.042 },
+    { y: -0.015, rx: 0.015, rz: 0.030, cx, cz: 0.044 },
+    { y: -0.018, rx: 0.008, rz: 0.018, cx, cz: 0.044 },
   ], 3);
   return buildLimbMesh(sections, 16);
 }
 
-function createArm(side: -1 | 1, sw: number, armScale: number, g: ReturnType<typeof getGenderMultipliers>) {
-  const shoulderX = side * 0.22 * sw * g.shoulderW;
+function createArm(side: -1 | 1, sw: number, _armScale: number, g: ReturnType<typeof getGenderMultipliers>) {
+  const shoulderX = side * 0.225 * sw * g.shoulderW;
   const a = g.armThin;
   const sections = interpolateSections([
-    { y: 1.33, rx: 0.052 * a, rz: 0.048 * a, cx: shoulderX },
-    { y: 1.28, rx: 0.050 * a, rz: 0.046 * a, cx: shoulderX * 1.02 },
-    { y: 1.22, rx: 0.045 * a, rz: 0.042 * a, cx: shoulderX * 1.03 },
-    { y: 1.14, rx: 0.042 * a, rz: 0.040 * a, cx: shoulderX * 1.04 },
-    { y: 1.06, rx: 0.038 * a, rz: 0.036 * a, cx: shoulderX * 1.04 },
-    { y: 0.98, rx: 0.033 * a, rz: 0.032 * a, cx: shoulderX * 1.03 },
-    { y: 0.94, rx: 0.031 * a, rz: 0.030 * a, cx: shoulderX * 1.02 },
-    { y: 0.88, rx: 0.034 * a, rz: 0.032 * a, cx: shoulderX * 1.01 },
-    { y: 0.80, rx: 0.030 * a, rz: 0.028 * a, cx: shoulderX },
-    { y: 0.72, rx: 0.026 * a, rz: 0.024 * a, cx: shoulderX * 0.98 },
+    // Shoulder cap (deltoid)
+    { y: 1.34, rx: 0.055 * a, rz: 0.052 * a, cx: shoulderX },
+    { y: 1.30, rx: 0.054 * a, rz: 0.050 * a, cx: shoulderX * 1.02 },
+    // Upper arm (bicep)
+    { y: 1.25, rx: 0.050 * a, rz: 0.048 * a, cx: shoulderX * 1.03 },
+    { y: 1.19, rx: 0.048 * a, rz: 0.046 * a, cx: shoulderX * 1.04 },
+    // Mid upper arm
+    { y: 1.13, rx: 0.044 * a, rz: 0.042 * a, cx: shoulderX * 1.04 },
+    // Elbow area — slightly wider/flatter
+    { y: 1.06, rx: 0.040 * a, rz: 0.038 * a, cx: shoulderX * 1.04 },
+    { y: 1.02, rx: 0.036 * a, rz: 0.035 * a, cx: shoulderX * 1.03 },
+    { y: 0.98, rx: 0.035 * a, rz: 0.034 * a, cx: shoulderX * 1.03 },
+    // Forearm — slight bulge
+    { y: 0.93, rx: 0.037 * a, rz: 0.035 * a, cx: shoulderX * 1.02 },
+    { y: 0.88, rx: 0.035 * a, rz: 0.033 * a, cx: shoulderX * 1.01 },
+    // Lower forearm — tapers
+    { y: 0.82, rx: 0.031 * a, rz: 0.029 * a, cx: shoulderX },
+    { y: 0.76, rx: 0.027 * a, rz: 0.025 * a, cx: shoulderX * 0.98 },
     // Wrist
-    { y: 0.66, rx: 0.022 * a, rz: 0.018 * a, cx: shoulderX * 0.96 },
-  ], 3);
-  return buildLimbMesh(sections, 16);
+    { y: 0.70, rx: 0.023 * a, rz: 0.019 * a, cx: shoulderX * 0.96 },
+    { y: 0.66, rx: 0.022 * a, rz: 0.017 * a, cx: shoulderX * 0.95 },
+  ], 4);
+  return buildLimbMesh(sections, 18);
 }
 
 /* ─────────────────────────────────────────────
-   Detailed Hand with Individual Fingers
+   Detailed Hands — Palm + 5 Fingers
    ───────────────────────────────────────────── */
 
 function createPalm(side: -1 | 1, sw: number, g: ReturnType<typeof getGenderMultipliers>) {
-  const sx = side * 0.22 * sw * g.shoulderW * 0.96;
+  const sx = side * 0.225 * sw * g.shoulderW * 0.95;
   const a = g.armThin;
   const sections = interpolateSections([
-    // Wrist connection
     { y: 0.66, rx: 0.022 * a, rz: 0.015 * a, cx: sx },
-    // Palm base (wider)
-    { y: 0.635, rx: 0.030 * a, rz: 0.012 * a, cx: sx },
-    // Palm middle (widest)
-    { y: 0.61, rx: 0.033 * a, rz: 0.013 * a, cx: sx * 0.98 },
-    // Knuckle line
-    { y: 0.585, rx: 0.032 * a, rz: 0.012 * a, cx: sx * 0.97 },
-    // Finger base
-    { y: 0.575, rx: 0.028 * a, rz: 0.010 * a, cx: sx * 0.96 },
+    { y: 0.645, rx: 0.028 * a, rz: 0.012 * a, cx: sx },
+    { y: 0.625, rx: 0.032 * a, rz: 0.013 * a, cx: sx * 0.99 },
+    { y: 0.605, rx: 0.033 * a, rz: 0.013 * a, cx: sx * 0.98 },
+    { y: 0.590, rx: 0.031 * a, rz: 0.012 * a, cx: sx * 0.97 },
+    { y: 0.580, rx: 0.028 * a, rz: 0.010 * a, cx: sx * 0.96 },
   ], 3);
   return buildLimbMesh(sections, 14);
 }
 
 interface FingerDef {
-  offsetX: number; // lateral offset from palm center
-  offsetZ: number; // front/back offset
-  length: number;  // total finger length
-  baseR: number;   // radius at base
-  tipR: number;    // radius at tip
-  segments: number; // section count
+  offsetX: number;
+  offsetZ: number;
+  length: number;
+  baseR: number;
+  tipR: number;
+  segments: number;
 }
 
 function createFinger(
-  side: -1 | 1,
-  sw: number,
-  g: ReturnType<typeof getGenderMultipliers>,
-  finger: FingerDef,
-  startY: number
+  side: -1 | 1, sw: number, g: ReturnType<typeof getGenderMultipliers>,
+  finger: FingerDef, startY: number
 ): THREE.BufferGeometry {
-  const sx = side * 0.22 * sw * g.shoulderW * 0.96;
+  const sx = side * 0.225 * sw * g.shoulderW * 0.95;
   const a = g.armThin;
   const cx = sx + side * finger.offsetX * a;
   const cz = finger.offsetZ;
-  const numSections = finger.segments;
   const sections: Section[] = [];
 
-  for (let i = 0; i <= numSections; i++) {
-    const t = i / numSections;
+  for (let i = 0; i <= finger.segments; i++) {
+    const t = i / finger.segments;
     const y = startY - t * finger.length;
-    // Slight bulge at knuckles (t=0.3 and t=0.6)
-    const knuckle1 = 1 + 0.12 * Math.exp(-Math.pow((t - 0.3) * 6, 2));
-    const knuckle2 = 1 + 0.08 * Math.exp(-Math.pow((t - 0.6) * 6, 2));
+    const knuckle1 = 1 + 0.15 * Math.exp(-Math.pow((t - 0.25) * 6, 2));
+    const knuckle2 = 1 + 0.10 * Math.exp(-Math.pow((t - 0.55) * 6, 2));
     const r = THREE.MathUtils.lerp(finger.baseR, finger.tipR, t) * a * knuckle1 * knuckle2;
     sections.push({ y, rx: r, rz: r * 0.85, cx, cz });
   }
@@ -366,25 +435,23 @@ function createFinger(
   return buildLimbMesh(interpolateSections(sections, 2), 10);
 }
 
-// Thumb is special — rotated and shorter
 function createThumb(side: -1 | 1, sw: number, g: ReturnType<typeof getGenderMultipliers>): THREE.BufferGeometry {
-  const sx = side * 0.22 * sw * g.shoulderW * 0.96;
+  const sx = side * 0.225 * sw * g.shoulderW * 0.95;
   const a = g.armThin;
-  // Thumb starts from side of palm, angled outward
-  const baseX = sx + side * 0.032 * a;
+  const baseX = sx + side * 0.030 * a;
   const sections = interpolateSections([
-    { y: 0.64, rx: 0.010 * a, rz: 0.009 * a, cx: baseX, cz: 0.008 },
-    { y: 0.63, rx: 0.011 * a, rz: 0.010 * a, cx: baseX + side * 0.006, cz: 0.012 },
-    { y: 0.615, rx: 0.010 * a, rz: 0.009 * a, cx: baseX + side * 0.012, cz: 0.015 },
-    { y: 0.60, rx: 0.009 * a, rz: 0.008 * a, cx: baseX + side * 0.016, cz: 0.016 },
-    { y: 0.585, rx: 0.008 * a, rz: 0.007 * a, cx: baseX + side * 0.018, cz: 0.015 },
-    { y: 0.575, rx: 0.005 * a, rz: 0.005 * a, cx: baseX + side * 0.019, cz: 0.013 },
+    { y: 0.645, rx: 0.010 * a, rz: 0.009 * a, cx: baseX, cz: 0.008 },
+    { y: 0.635, rx: 0.011 * a, rz: 0.010 * a, cx: baseX + side * 0.006, cz: 0.012 },
+    { y: 0.620, rx: 0.010 * a, rz: 0.009 * a, cx: baseX + side * 0.012, cz: 0.015 },
+    { y: 0.605, rx: 0.009 * a, rz: 0.008 * a, cx: baseX + side * 0.016, cz: 0.016 },
+    { y: 0.590, rx: 0.008 * a, rz: 0.007 * a, cx: baseX + side * 0.018, cz: 0.015 },
+    { y: 0.580, rx: 0.005 * a, rz: 0.005 * a, cx: baseX + side * 0.019, cz: 0.013 },
   ], 2);
   return buildLimbMesh(sections, 10);
 }
 
 /* ─────────────────────────────────────────────
-   Facial features (detailed)
+   Facial Features — Clean mannequin style
    ───────────────────────────────────────────── */
 
 function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTone }) {
@@ -394,186 +461,137 @@ function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTo
   const faceColor = skinTone.faceTint;
   const lipColor = skinTone.lipTint;
 
-  // Eyebrow shape
-  const browThickness = isFemale ? 0.003 : 0.005;
-  const browWidth = isFemale ? 0.028 : 0.032;
-  const browY = 1.635;
-
   return (
     <group>
-      {/* ── EYES (detailed) ── */}
+      {/* ── EYES ── */}
       {([-1, 1] as const).map((side) => (
         <group key={`eye-${side}`}>
-          {/* Eye socket shadow */}
-          <mesh position={[side * 0.032 * s, 1.625 * s / s, -0.002]} rotation={[0.1, 0, 0]}>
-            <sphereGeometry args={[0.018 * s, 12, 12]} />
-            <meshPhysicalMaterial color={faceColor} roughness={0.8} transparent opacity={0.3} />
+          {/* Eye socket — subtle depression */}
+          <mesh position={[side * 0.033 * s, 1.635, 0.082]} rotation={[0.05, 0, 0]} scale={[1.3, 0.8, 0.6]}>
+            <sphereGeometry args={[0.015 * s, 14, 10]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.7} transparent opacity={0.25} />
           </mesh>
           {/* Eyeball */}
-          <mesh position={[side * 0.032 * s, 1.628, 0.082]}>
-            <sphereGeometry args={[0.013 * s, 14, 14]} />
-            <meshPhysicalMaterial color="#f2ebe3" roughness={0.08} metalness={0} clearcoat={0.6} />
+          <mesh position={[side * 0.033 * s, 1.637, 0.088]}>
+            <sphereGeometry args={[0.012 * s, 16, 16]} />
+            <meshPhysicalMaterial color="#f5efe8" roughness={0.06} metalness={0} clearcoat={0.8} />
           </mesh>
           {/* Iris */}
-          <mesh position={[side * 0.032 * s, 1.628, 0.092]}>
-            <sphereGeometry args={[0.007 * s, 12, 12]} />
-            <meshPhysicalMaterial color={isFemale ? "#5a3a28" : "#3a2a1a"} roughness={0.12} metalness={0.05} clearcoat={0.4} />
+          <mesh position={[side * 0.033 * s, 1.637, 0.098]}>
+            <sphereGeometry args={[0.006 * s, 14, 14]} />
+            <meshPhysicalMaterial color={isFemale ? "#5a3a28" : "#3a2a1a"} roughness={0.10} clearcoat={0.5} />
           </mesh>
           {/* Pupil */}
-          <mesh position={[side * 0.032 * s, 1.628, 0.096]}>
-            <sphereGeometry args={[0.003 * s, 8, 8]} />
-            <meshPhysicalMaterial color="#0a0a0a" roughness={0.05} />
+          <mesh position={[side * 0.033 * s, 1.637, 0.101]}>
+            <sphereGeometry args={[0.003 * s, 10, 10]} />
+            <meshPhysicalMaterial color="#060606" roughness={0.02} />
           </mesh>
           {/* Upper eyelid */}
-          <mesh position={[side * 0.032 * s, 1.636, 0.086]} rotation={[0.35, 0, 0]} scale={[1.4, 0.4, 0.6]}>
-            <sphereGeometry args={[0.012 * s, 10, 6]} />
-            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
+          <mesh position={[side * 0.033 * s, 1.645, 0.091]} rotation={[0.4, 0, 0]} scale={[1.5, 0.35, 0.6]}>
+            <sphereGeometry args={[0.011 * s, 12, 8]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.45} />
           </mesh>
           {/* Lower eyelid */}
-          <mesh position={[side * 0.032 * s, 1.620, 0.086]} rotation={[-0.25, 0, 0]} scale={[1.3, 0.3, 0.5]}>
-            <sphereGeometry args={[0.012 * s, 10, 6]} />
-            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
+          <mesh position={[side * 0.033 * s, 1.630, 0.091]} rotation={[-0.3, 0, 0]} scale={[1.3, 0.25, 0.5]}>
+            <sphereGeometry args={[0.011 * s, 12, 8]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.45} />
           </mesh>
-          {/* Eyebrow */}
-          <mesh position={[side * 0.032 * s, browY, 0.088]} rotation={[0.2, 0, side * -0.08]} scale={[1, 1, 0.5]}>
-            <boxGeometry args={[browWidth * s, browThickness, 0.008]} />
-            <meshPhysicalMaterial color="#1a1410" roughness={0.9} />
+          {/* Eyebrow — subtle ridge */}
+          <mesh position={[side * 0.033 * s, 1.654, 0.092]} rotation={[0.15, 0, side * -0.06]} scale={[1, 1, 0.5]}>
+            <boxGeometry args={[(isFemale ? 0.026 : 0.030) * s, isFemale ? 0.003 : 0.005, 0.008]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.6} />
           </mesh>
-          {/* Eyelashes (female) */}
-          {isFemale && (
-            <mesh position={[side * 0.032 * s, 1.636, 0.094]} rotation={[0.5, 0, side * 0.05]} scale={[1.2, 0.15, 0.3]}>
-              <boxGeometry args={[0.018 * s, 0.003, 0.004]} />
-              <meshPhysicalMaterial color="#1a1008" roughness={0.9} />
-            </mesh>
-          )}
         </group>
       ))}
 
-      {/* ── NOSE (detailed) ── */}
+      {/* ── NOSE ── */}
       <group>
-        {/* Nose bridge */}
-        <mesh position={[0, 1.605, 0.088]} rotation={[0.1, 0, 0]}>
-          <boxGeometry args={[0.010 * s, 0.035, 0.012]} />
-          <meshPhysicalMaterial color={faceColor} roughness={0.5} clearcoat={0.1} />
+        {/* Bridge */}
+        <mesh position={[0, 1.620, 0.094]} rotation={[0.08, 0, 0]}>
+          <boxGeometry args={[0.009 * s, 0.030, 0.011]} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.45} clearcoat={0.08} />
         </mesh>
-        {/* Nose tip */}
-        <mesh position={[0, 1.585, 0.098]} rotation={[0.15, 0, 0]}>
-          <sphereGeometry args={[isFemale ? 0.010 : 0.013, 10, 10]} />
-          <meshPhysicalMaterial color={faceColor} roughness={0.45} clearcoat={0.12} />
+        {/* Tip — rounded */}
+        <mesh position={[0, 1.600, 0.102]}>
+          <sphereGeometry args={[isFemale ? 0.009 : 0.012, 12, 12]} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.40} clearcoat={0.10} />
         </mesh>
         {/* Nostrils */}
         {([-1, 1] as const).map((side) => (
-          <mesh key={`nostril-${side}`} position={[side * 0.008 * s, 1.582, 0.092]}>
-            <sphereGeometry args={[0.005 * s, 8, 8]} />
-            <meshPhysicalMaterial color={faceColor} roughness={0.6} />
+          <mesh key={`nostril-${side}`} position={[side * 0.007 * s, 1.597, 0.098]}>
+            <sphereGeometry args={[0.004 * s, 8, 8]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.55} />
           </mesh>
         ))}
       </group>
 
-      {/* ── MOUTH (detailed) ── */}
+      {/* ── MOUTH ── */}
       <group>
         {/* Upper lip */}
-        <mesh position={[0, 1.567, 0.088]} scale={[1.8, 0.6, 0.6]}>
-          <sphereGeometry args={[isFemale ? 0.011 : 0.010, 12, 8]} />
-          <meshPhysicalMaterial color={lipColor} roughness={0.32} clearcoat={isFemale ? 0.4 : 0.2} />
-        </mesh>
-        {/* Cupid's bow (upper lip shape) */}
-        <mesh position={[0, 1.570, 0.091]} scale={[1, 0.3, 0.3]}>
-          <sphereGeometry args={[0.006 * s, 8, 6]} />
-          <meshPhysicalMaterial color={lipColor} roughness={0.3} />
+        <mesh position={[0, 1.577, 0.092]} scale={[1.6, 0.5, 0.5]}>
+          <sphereGeometry args={[isFemale ? 0.010 : 0.009, 14, 10]} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.28} clearcoat={isFemale ? 0.35 : 0.15} />
         </mesh>
         {/* Lower lip */}
-        <mesh position={[0, 1.561, 0.087]} scale={[1.6, 0.7, 0.6]}>
-          <sphereGeometry args={[isFemale ? 0.012 : 0.010, 12, 8]} />
-          <meshPhysicalMaterial color={lipColor} roughness={0.3} clearcoat={isFemale ? 0.45 : 0.25} />
+        <mesh position={[0, 1.571, 0.091]} scale={[1.5, 0.6, 0.5]}>
+          <sphereGeometry args={[isFemale ? 0.011 : 0.009, 14, 10]} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.26} clearcoat={isFemale ? 0.40 : 0.20} />
         </mesh>
-        {/* Lip line / separation */}
-        <mesh position={[0, 1.564, 0.091]} scale={[2, 0.08, 0.3]}>
-          <boxGeometry args={[0.010 * s, 0.001, 0.004]} />
+        {/* Lip line */}
+        <mesh position={[0, 1.574, 0.095]} scale={[1.8, 0.06, 0.25]}>
+          <boxGeometry args={[0.009 * s, 0.001, 0.003]} />
           <meshPhysicalMaterial color={faceColor} roughness={0.5} />
         </mesh>
       </group>
 
-      {/* ── EARS (detailed) ── */}
+      {/* ── EARS ── */}
       {([-1, 1] as const).map((side) => (
         <group key={`ear-${side}`}>
-          {/* Main ear */}
-          <mesh position={[side * 0.098 * s, 1.60, -0.01]} rotation={[0, side * 0.3, 0]} scale={[0.6, 1, 0.5]}>
-            <sphereGeometry args={[0.022 * s, 12, 12]} />
-            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
+          {/* Main ear shell */}
+          <mesh position={[side * 0.100 * s, 1.62, -0.012]} rotation={[0, side * 0.25, 0]} scale={[0.55, 1.0, 0.45]}>
+            <sphereGeometry args={[0.022 * s, 14, 14]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.48} />
           </mesh>
           {/* Ear lobe */}
-          <mesh position={[side * 0.098 * s, 1.585, -0.008]} scale={[0.5, 0.5, 0.4]}>
-            <sphereGeometry args={[0.012 * s, 8, 8]} />
-            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
+          <mesh position={[side * 0.100 * s, 1.603, -0.010]} scale={[0.45, 0.45, 0.35]}>
+            <sphereGeometry args={[0.012 * s, 10, 10]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.48} />
           </mesh>
-          {/* Inner ear detail */}
-          <mesh position={[side * 0.094 * s, 1.602, -0.005]} rotation={[0, side * 0.4, 0]} scale={[0.4, 0.7, 0.3]}>
-            <sphereGeometry args={[0.014 * s, 8, 8]} />
-            <meshPhysicalMaterial color={faceColor} roughness={0.6} />
+          {/* Inner ear cavity */}
+          <mesh position={[side * 0.096 * s, 1.618, -0.007]} rotation={[0, side * 0.35, 0]} scale={[0.35, 0.65, 0.25]}>
+            <sphereGeometry args={[0.014 * s, 10, 10]} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.60} />
           </mesh>
         </group>
       ))}
 
-      {/* ── HAIR ── */}
-      <group>
-        {/* Hair cap */}
-        <mesh position={[0, 1.70, -0.005]}>
-          <sphereGeometry args={[0.102 * s, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
-          <meshPhysicalMaterial color={isFemale ? "#2a1a10" : "#1a1410"} roughness={0.85} metalness={0} />
+      {/* ── SUBTLE COLLARBONE (mannequin aesthetic) ── */}
+      {([-1, 1] as const).map((side) => (
+        <mesh key={`clavicle-${side}`} position={[side * 0.07, 1.395, 0.06]} rotation={[0.1, 0, side * -0.25]} scale={[1, 0.3, 0.4]}>
+          <capsuleGeometry args={[0.006, 0.08, 6, 12]} />
+          <meshPhysicalMaterial color={skinTone.hex} roughness={0.50} transparent opacity={0.4} />
         </mesh>
-        {/* Side hair */}
-        {([-1, 1] as const).map((side) => (
-          <mesh key={`sidhair-${side}`} position={[side * 0.085 * s, 1.64, -0.025]} scale={[0.6, 1.2, 0.8]}>
-            <sphereGeometry args={[0.04 * s, 12, 12]} />
-            <meshPhysicalMaterial color={isFemale ? "#2a1a10" : "#1a1410"} roughness={0.85} />
-          </mesh>
-        ))}
-        {/* Back hair */}
-        <mesh position={[0, 1.62, -0.08]} scale={[1, 1.2, 0.6]}>
-          <sphereGeometry args={[0.09 * s, 16, 12]} />
-          <meshPhysicalMaterial color={isFemale ? "#2a1a10" : "#1a1410"} roughness={0.85} />
-        </mesh>
-        {/* Female long hair */}
-        {isFemale && (
-          <>
-            <mesh position={[0, 1.50, -0.06]} scale={[1.1, 1.8, 0.5]}>
-              <sphereGeometry args={[0.08, 16, 12]} />
-              <meshPhysicalMaterial color="#2a1a10" roughness={0.85} />
-            </mesh>
-            {([-1, 1] as const).map((side) => (
-              <mesh key={`longhair-${side}`} position={[side * 0.06, 1.42, -0.04]} scale={[0.5, 2.0, 0.4]}>
-                <sphereGeometry args={[0.06, 12, 10]} />
-                <meshPhysicalMaterial color="#2a1a10" roughness={0.85} />
-              </mesh>
-            ))}
-          </>
-        )}
-      </group>
+      ))}
     </group>
   );
 }
 
 /* ─────────────────────────────────────────────
-   Hand component (palm + 5 individual fingers)
+   Hand component
    ───────────────────────────────────────────── */
 function HandMesh({ side, sw, g, material }: { side: -1 | 1; sw: number; g: ReturnType<typeof getGenderMultipliers>; material: THREE.Material }) {
-  const a = g.armThin;
   const fingerDefs: FingerDef[] = [
-    // Index
-    { offsetX: -0.012, offsetZ: 0.004, length: 0.055, baseR: 0.006, tipR: 0.004, segments: 8 },
-    // Middle (longest)
+    { offsetX: -0.012, offsetZ: 0.004, length: 0.054, baseR: 0.006, tipR: 0.004, segments: 8 },
     { offsetX: -0.003, offsetZ: 0.005, length: 0.060, baseR: 0.006, tipR: 0.004, segments: 8 },
-    // Ring
     { offsetX: 0.006, offsetZ: 0.004, length: 0.054, baseR: 0.0058, tipR: 0.0038, segments: 8 },
-    // Pinky
     { offsetX: 0.014, offsetZ: 0.002, length: 0.044, baseR: 0.005, tipR: 0.0032, segments: 7 },
   ];
 
   const palmGeo = useMemo(() => createPalm(side, sw, g), [side, sw, g]);
   const thumbGeo = useMemo(() => createThumb(side, sw, g), [side, sw, g]);
   const fingerGeos = useMemo(
-    () => fingerDefs.map((f) => createFinger(side, sw, g, f, 0.575)),
+    () => fingerDefs.map((f) => createFinger(side, sw, g, f, 0.580)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [side, sw, g]
   );
 
@@ -595,72 +613,98 @@ function HandMesh({ side, sw, g, material }: { side: -1 | 1; sw: number; g: Retu
 function createJacketTorso(cs: number, ws: number, hs: number, sw: number, g: ReturnType<typeof getGenderMultipliers>) {
   const o = 0.016;
   const sections = interpolateSections([
-    { y: 1.40, rx: 0.065 + o, rz: 0.06 + o },
-    { y: 1.34, rx: 0.22 * sw * g.shoulderW + o, rz: 0.12 + o },
-    { y: 1.26, rx: 0.20 * cs * g.shoulderW + o, rz: 0.125 * cs * g.chestDepth + o },
-    { y: 1.18, rx: 0.195 * cs * g.shoulderW + o, rz: 0.13 * cs * g.chestDepth + o },
-    { y: 1.10, rx: 0.18 * cs + o, rz: 0.12 * cs * g.chestDepth + o },
-    { y: 1.02, rx: 0.165 * ws * g.waistNarrow + o, rz: 0.11 * ws + o },
-    { y: 0.94, rx: 0.145 * ws * g.waistNarrow + o, rz: 0.10 * ws + o },
-    { y: 0.88, rx: 0.155 * hs * g.hipWide + o, rz: 0.105 * hs + o },
-    { y: 0.82, rx: 0.18 * hs * g.hipWide + o, rz: 0.12 * hs + o },
-    { y: 0.76, rx: 0.20 * hs * g.hipWide + o, rz: 0.13 * hs + o },
-    { y: 0.70, rx: 0.195 * hs * g.hipWide + o, rz: 0.125 * hs + o },
-    { y: 0.65, rx: 0.17 * g.hipWide + o, rz: 0.11 + o },
+    { y: 1.41, rx: 0.070 + o, rz: 0.065 + o },
+    { y: 1.36, rx: 0.225 * sw * g.shoulderW + o, rz: 0.11 + o },
+    { y: 1.30, rx: 0.22 * sw * g.shoulderW + o, rz: 0.115 + o },
+    { y: 1.25, rx: 0.205 * cs * g.shoulderW + o, rz: 0.125 * cs * g.chestDepth + o },
+    { y: 1.20, rx: 0.200 * cs * g.shoulderW + o, rz: 0.135 * cs * g.chestDepth + o },
+    { y: 1.14, rx: 0.190 * cs + o, rz: 0.125 * cs * g.chestDepth + o },
+    { y: 1.08, rx: 0.175 * cs + o, rz: 0.115 * cs + o },
+    { y: 1.02, rx: 0.160 * ws * g.waistNarrow + o, rz: 0.105 * ws + o },
+    { y: 0.96, rx: 0.148 * ws * g.waistNarrow + o, rz: 0.098 * ws + o },
+    { y: 0.90, rx: 0.165 * hs * g.hipWide + o, rz: 0.110 * hs + o },
+    { y: 0.84, rx: 0.185 * hs * g.hipWide + o, rz: 0.125 * hs + o },
+    { y: 0.78, rx: 0.210 * hs * g.hipWide + o, rz: 0.140 * hs + o },
+    { y: 0.72, rx: 0.205 * hs * g.hipWide + o, rz: 0.135 * hs + o },
+    { y: 0.66, rx: 0.180 * g.hipWide + o, rz: 0.115 + o },
   ], 4);
-  return buildLimbMesh(sections, 36);
+  return buildLimbMesh(sections, 40);
 }
 
 function createTrouserLeg(side: -1 | 1, hs: number, g: ReturnType<typeof getGenderMultipliers>) {
   const o = 0.006;
-  const hipOff = side * 0.085 * g.hipWide;
+  const hipOff = side * 0.092 * g.hipWide;
   const t = g.legThin;
   const sections = interpolateSections([
-    { y: 0.70, rx: 0.09 * hs * t + o, rz: 0.095 * hs * t + o, cx: hipOff },
-    { y: 0.64, rx: 0.086 * t + o, rz: 0.089 * t + o, cx: hipOff },
-    { y: 0.56, rx: 0.080 * t + o, rz: 0.082 * t + o, cx: hipOff * 0.85 },
-    { y: 0.48, rx: 0.070 * t + o, rz: 0.072 * t + o, cx: hipOff * 0.72 },
-    { y: 0.40, rx: 0.060 * t + o, rz: 0.063 * t + o, cx: hipOff * 0.65 },
-    { y: 0.34, rx: 0.054 * t + o, rz: 0.058 * t + o, cx: hipOff * 0.6 },
-    { y: 0.28, rx: 0.056 * t + o, rz: 0.054 * t + o, cx: hipOff * 0.55 },
-    { y: 0.20, rx: 0.050 * t + o, rz: 0.048 * t + o, cx: hipOff * 0.5 },
-    { y: 0.12, rx: 0.042 * t + o, rz: 0.040 * t + o, cx: hipOff * 0.5 },
-    { y: 0.06, rx: 0.036 + o, rz: 0.034 + o, cx: hipOff * 0.5 },
-  ], 3);
-  return buildLimbMesh(sections, 20);
+    { y: 0.68, rx: 0.094 * hs * t + o, rz: 0.098 * hs * t + o, cx: hipOff * 0.92 },
+    { y: 0.62, rx: 0.090 * t + o, rz: 0.094 * t + o, cx: hipOff * 0.88 },
+    { y: 0.54, rx: 0.082 * t + o, rz: 0.084 * t + o, cx: hipOff * 0.78 },
+    { y: 0.46, rx: 0.072 * t + o, rz: 0.074 * t + o, cx: hipOff * 0.68 },
+    { y: 0.38, rx: 0.058 * t + o, rz: 0.062 * t + o, cx: hipOff * 0.60 },
+    { y: 0.32, rx: 0.057 * t + o, rz: 0.058 * t + o, cx: hipOff * 0.55 },
+    { y: 0.25, rx: 0.054 * t + o, rz: 0.052 * t + o, cx: hipOff * 0.50 },
+    { y: 0.18, rx: 0.048 * t + o, rz: 0.046 * t + o, cx: hipOff * 0.48 },
+    { y: 0.10, rx: 0.038 * t + o, rz: 0.036 * t + o, cx: hipOff * 0.47 },
+    { y: 0.06, rx: 0.035 + o, rz: 0.034 + o, cx: hipOff * 0.47 },
+  ], 4);
+  return buildLimbMesh(sections, 22);
 }
 
 function createSleeve(side: -1 | 1, sw: number, g: ReturnType<typeof getGenderMultipliers>) {
   const o = 0.010;
-  const sx = side * 0.22 * sw * g.shoulderW;
+  const sx = side * 0.225 * sw * g.shoulderW;
   const a = g.armThin;
   const sections = interpolateSections([
-    { y: 1.34, rx: 0.056 * a + o, rz: 0.052 * a + o, cx: sx },
-    { y: 1.28, rx: 0.054 * a + o, rz: 0.050 * a + o, cx: sx * 1.02 },
-    { y: 1.20, rx: 0.049 * a + o, rz: 0.046 * a + o, cx: sx * 1.03 },
-    { y: 1.12, rx: 0.046 * a + o, rz: 0.044 * a + o, cx: sx * 1.04 },
-    { y: 1.04, rx: 0.042 * a + o, rz: 0.040 * a + o, cx: sx * 1.04 },
-    { y: 0.96, rx: 0.037 * a + o, rz: 0.036 * a + o, cx: sx * 1.03 },
-    { y: 0.90, rx: 0.038 * a + o, rz: 0.036 * a + o, cx: sx * 1.01 },
-    { y: 0.82, rx: 0.034 * a + o, rz: 0.032 * a + o, cx: sx },
-    { y: 0.74, rx: 0.030 * a + o, rz: 0.028 * a + o, cx: sx * 0.98 },
-    { y: 0.68, rx: 0.026 * a + o, rz: 0.022 * a + o, cx: sx * 0.96 },
-  ], 3);
-  return buildLimbMesh(sections, 16);
+    { y: 1.35, rx: 0.058 * a + o, rz: 0.055 * a + o, cx: sx },
+    { y: 1.29, rx: 0.056 * a + o, rz: 0.053 * a + o, cx: sx * 1.02 },
+    { y: 1.22, rx: 0.053 * a + o, rz: 0.050 * a + o, cx: sx * 1.03 },
+    { y: 1.14, rx: 0.050 * a + o, rz: 0.048 * a + o, cx: sx * 1.04 },
+    { y: 1.06, rx: 0.044 * a + o, rz: 0.042 * a + o, cx: sx * 1.04 },
+    { y: 0.98, rx: 0.040 * a + o, rz: 0.038 * a + o, cx: sx * 1.03 },
+    { y: 0.92, rx: 0.041 * a + o, rz: 0.039 * a + o, cx: sx * 1.02 },
+    { y: 0.85, rx: 0.038 * a + o, rz: 0.036 * a + o, cx: sx * 1.01 },
+    { y: 0.78, rx: 0.033 * a + o, rz: 0.031 * a + o, cx: sx },
+    { y: 0.70, rx: 0.028 * a + o, rz: 0.024 * a + o, cx: sx * 0.97 },
+  ], 4);
+  return buildLimbMesh(sections, 18);
 }
 
 function createShoeGeo(side: -1 | 1, g: ReturnType<typeof getGenderMultipliers>) {
-  const cx = side * 0.085 * g.hipWide * 0.5;
+  const cx = side * 0.092 * g.hipWide * 0.47;
   const sections = interpolateSections([
-    { y: 0.06, rx: 0.035, rz: 0.035, cx },
-    { y: 0.04, rx: 0.038, rz: 0.050, cx, cz: 0.005 },
-    { y: 0.025, rx: 0.042, rz: 0.065, cx, cz: 0.015 },
-    { y: 0.012, rx: 0.044, rz: 0.075, cx, cz: 0.025 },
-    { y: 0.0, rx: 0.043, rz: 0.080, cx, cz: 0.03 },
-    { y: -0.012, rx: 0.040, rz: 0.075, cx, cz: 0.035 },
-    { y: -0.022, rx: 0.025, rz: 0.055, cx, cz: 0.035 },
+    { y: 0.07, rx: 0.035, rz: 0.035, cx },
+    { y: 0.05, rx: 0.038, rz: 0.048, cx, cz: 0.005 },
+    { y: 0.03, rx: 0.042, rz: 0.063, cx, cz: 0.015 },
+    { y: 0.015, rx: 0.044, rz: 0.075, cx, cz: 0.025 },
+    { y: 0.0, rx: 0.043, rz: 0.082, cx, cz: 0.032 },
+    { y: -0.012, rx: 0.040, rz: 0.076, cx, cz: 0.038 },
+    { y: -0.022, rx: 0.025, rz: 0.055, cx, cz: 0.038 },
   ], 3);
-  return buildLimbMesh(sections, 16);
+  return buildLimbMesh(sections, 18);
+}
+
+/* ─────────────────────────────────────────────
+   Female Bust Mesh — anatomical hemispheres
+   ───────────────────────────────────────────── */
+
+function BustMesh({ cs, g, material }: { cs: number; g: ReturnType<typeof getGenderMultipliers>; material: THREE.Material }) {
+  if (g.bustProtrusion <= 0) return null;
+  const bustSize = 0.045 * cs * g.chestDepth;
+  return (
+    <>
+      {([-1, 1] as const).map((side) => (
+        <mesh
+          key={`bust-${side}`}
+          position={[side * 0.065 * g.shoulderW, 1.22, 0.10 + g.bustProtrusion * 0.5]}
+          rotation={[0.25, side * 0.05, 0]}
+          scale={[1.0, 0.85, 0.9]}
+        >
+          <sphereGeometry args={[bustSize, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+          <primitive object={material} attach="material" />
+        </mesh>
+      ))}
+    </>
+  );
 }
 
 /* ─────────────────────────────────────────────
@@ -703,7 +747,7 @@ export default function Mannequin3D({
   const leftSleeveAltRef = useRef<THREE.Group>(null);
   const rightSleeveAltRef = useRef<THREE.Group>(null);
 
-  const LERP_SPEED = 5; // higher = faster transition
+  const LERP_SPEED = 5;
 
   useFrame((state, delta) => {
     if (group.current) {
@@ -727,12 +771,17 @@ export default function Mannequin3D({
     lerpGroup(rightSleeveAltRef, targetPose.rightArmPos, targetPose.rightArmRot);
   });
 
-  // ── Materials ──
+  // ── Materials — smooth matte mannequin finish ──
   const skinMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: skinTone.hex, roughness: 0.5, metalness: 0.0,
-    clearcoat: 0.12, clearcoatRoughness: 0.6,
-    sheen: 0.2, sheenColor: new THREE.Color(skinTone.hex).offsetHSL(0, -0.05, 0.1), sheenRoughness: 0.4,
-    envMapIntensity: 0.5,
+    color: skinTone.hex,
+    roughness: 0.42,
+    metalness: 0.0,
+    clearcoat: 0.15,
+    clearcoatRoughness: 0.5,
+    sheen: 0.25,
+    sheenColor: new THREE.Color(skinTone.hex).offsetHSL(0, -0.05, 0.08),
+    sheenRoughness: 0.35,
+    envMapIntensity: 0.6,
   }), [skinTone]);
 
   const suitMat = useMemo(() => new THREE.MeshPhysicalMaterial({
@@ -795,6 +844,7 @@ export default function Mannequin3D({
       <mesh geometry={headGeo} material={skinMat} castShadow />
       <mesh geometry={neckGeo} material={skinMat} castShadow />
       <mesh geometry={torsoGeo} material={skinMat} castShadow receiveShadow />
+      <BustMesh cs={cs} g={g} material={skinMat} />
       <mesh geometry={leftLegGeo} material={skinMat} castShadow />
       <mesh geometry={rightLegGeo} material={skinMat} castShadow />
       <mesh geometry={leftFootGeo} material={skinMat} />
@@ -821,7 +871,7 @@ export default function Mannequin3D({
 
       {/* ── SHIRT COLLAR ── */}
       {garments.shirt && (
-        <mesh position={[0, 1.41, 0]} material={shirtMat}>
+        <mesh position={[0, 1.415, 0]} material={shirtMat}>
           <cylinderGeometry args={[0.062 * g.neckThin, 0.068 * g.neckThin, 0.02, 28]} />
         </mesh>
       )}
@@ -910,9 +960,9 @@ export default function Mannequin3D({
       {garments.belt && (
         <>
           <mesh position={[0, 0.86, 0]} material={beltMat}>
-            <cylinderGeometry args={[0.145 * ws * g.waistNarrow, 0.142 * ws * g.waistNarrow, 0.018, 32]} />
+            <cylinderGeometry args={[0.148 * ws * g.waistNarrow, 0.145 * ws * g.waistNarrow, 0.018, 32]} />
           </mesh>
-          <mesh position={[0, 0.86, 0.145 * ws * g.waistNarrow]}>
+          <mesh position={[0, 0.86, 0.148 * ws * g.waistNarrow]}>
             <boxGeometry args={[0.022, 0.016, 0.004]} />
             <meshPhysicalMaterial color="#b8a88a" roughness={0.18} metalness={0.75} />
           </mesh>
