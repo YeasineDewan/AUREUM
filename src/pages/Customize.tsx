@@ -606,8 +606,22 @@ const Customize = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="hero" className="flex-1" asChild>
-                      <a href="/bespoke">Order Bespoke</a>
+                    <Button
+                      variant="hero"
+                      className="flex-1"
+                      onClick={() => {
+                        addItem({
+                          id: `custom-${selectedFabric.id}-${selectedColor.id}-${selectedStyle.id}`,
+                          name: "Custom Bespoke Suit",
+                          price: totalPrice,
+                          fabric: selectedFabric.name,
+                          color: selectedColor.name,
+                          style: selectedStyle.name,
+                        });
+                        toast({ title: "Added to cart", description: `Custom suit — ${selectedFabric.name}, ${selectedColor.name}` });
+                      }}
+                    >
+                      <ShoppingBag className="h-4 w-4 mr-2" /> Add to Cart
                     </Button>
                     <Button variant="heroOutline" size="icon" onClick={reset}>
                       <RotateCcw className="h-4 w-4" />
