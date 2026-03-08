@@ -29,6 +29,7 @@ import AdminInvoices from "./pages/admin/AdminInvoices";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminShipments from "./pages/admin/AdminShipments";
 import AdminFraud from "./pages/admin/AdminFraud";
+import AdminChatbot from "./pages/admin/AdminChatbot";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/shipments" element={<AdminShipments />} />
             <Route path="/admin/fraud" element={<AdminFraud />} />
+            <Route path="/admin/chatbot" element={<AdminChatbot />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/notifications" element={<AdminNotifications />} />
 

@@ -1,30 +1,78 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are AUREUM's luxury menswear AI assistant. You help customers with:
-- Product recommendations and styling advice
-- Fabric and material information
-- Sizing guidance and measurement help
-- Appointment booking guidance
-- Order inquiries and general questions
-- Bespoke tailoring process explanation
-
-Tone: Sophisticated, knowledgeable, warm but professional. Like a personal stylist at a high-end tailor.
-Keep responses concise (2-4 sentences unless detailed info is requested).
-When recommending products, mention specific fabrics, fits, and occasions.
-Currency is BDT (৳). The brand is AUREUM - premium bespoke menswear.`;
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
+    const { messages, sessionId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Create Supabase client to fetch config + knowledge
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch chat config
+    const { data: configRows } = await supabase
+      .from("chat_config")
+      .select("key, value");
+    
+    const config: Record<string, string> = {};
+    (configRows || []).forEach((r: any) => { config[r.key] = r.value; });
+
+    // Check if chat is enabled
+    if (config.enabled === "false") {
+      return new Response(JSON.stringify({ error: "Chat is currently unavailable." }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fetch knowledge base
+    const { data: knowledgeRows } = await supabase
+      .from("chat_knowledge")
+      .select("title, content, category")
+      .eq("enabled", true);
+
+    // Build system prompt with knowledge
+    let systemPrompt = config.system_prompt || "You are a helpful assistant.";
+    
+    if (knowledgeRows && knowledgeRows.length > 0) {
+      systemPrompt += "\n\n--- KNOWLEDGE BASE ---\nUse the following information to answer customer questions accurately:\n\n";
+      knowledgeRows.forEach((k: any) => {
+        systemPrompt += `[${k.category.toUpperCase()}] ${k.title}:\n${k.content}\n\n`;
+      });
+      systemPrompt += "--- END KNOWLEDGE BASE ---\nAlways prioritize information from the knowledge base when answering questions. If you don't know something, suggest the customer book an appointment or contact us directly.";
+    }
+
+    // Save conversation to DB
+    if (sessionId) {
+      const allMessages = messages.map((m: any) => ({ role: m.role, content: m.content, timestamp: new Date().toISOString() }));
+      
+      // Upsert conversation
+      const { data: existing } = await supabase
+        .from("chat_conversations")
+        .select("id")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("chat_conversations")
+          .update({ messages: allMessages, updated_at: new Date().toISOString() })
+          .eq("session_id", sessionId);
+      } else {
+        await supabase
+          .from("chat_conversations")
+          .insert({ session_id: sessionId, messages: allMessages });
+      }
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -35,7 +83,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,

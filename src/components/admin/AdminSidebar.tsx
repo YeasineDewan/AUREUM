@@ -12,6 +12,7 @@ import {
   CreditCard,
   Truck,
   ShieldAlert,
+  MessageCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -39,6 +40,7 @@ const mainNav = [
   { title: "Payments", url: "/admin/payments", icon: CreditCard },
   { title: "Shipments", url: "/admin/shipments", icon: Truck },
   { title: "Fraud Check", url: "/admin/fraud", icon: ShieldAlert },
+  { title: "AI Chatbot", url: "/admin/chatbot", icon: MessageCircle },
 ];
 
 const secondaryNav = [
