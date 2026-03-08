@@ -5,6 +5,70 @@ import type { StyleOption, GarmentVisibility, BodyMeasurements } from "@/types/c
 import { measurementsToMorphTargets } from "@/types/customize";
 
 /* ─────────────────────────────────────────────
+   Pose & Skin Tone types
+   ───────────────────────────────────────────── */
+
+export type PosePreset = "standing" | "relaxed" | "akimbo";
+
+export interface SkinTone {
+  id: string;
+  name: string;
+  hex: string;
+  faceTint: string;   // slightly darker for facial shadows
+  lipTint: string;
+}
+
+export const SKIN_TONES: SkinTone[] = [
+  { id: "fair",     name: "Fair",       hex: "#f5d6c3", faceTint: "#e8c4a8", lipTint: "#d4888a" },
+  { id: "light",    name: "Light",      hex: "#d4a986", faceTint: "#c49070", lipTint: "#c47068" },
+  { id: "medium",   name: "Medium",     hex: "#c68642", faceTint: "#a8703a", lipTint: "#a05848" },
+  { id: "tan",      name: "Tan",        hex: "#a0724a", faceTint: "#8a5e3a", lipTint: "#8a4a3a" },
+  { id: "brown",    name: "Brown",      hex: "#8d5524", faceTint: "#724420", lipTint: "#6a3828" },
+  { id: "dark",     name: "Dark",       hex: "#5c3310", faceTint: "#4a280e", lipTint: "#4a2a1a" },
+];
+
+export const POSE_PRESETS: { id: PosePreset; name: string; icon: string }[] = [
+  { id: "standing", name: "Standing", icon: "🧍" },
+  { id: "relaxed",  name: "Relaxed",  icon: "😌" },
+  { id: "akimbo",   name: "Arms Akimbo", icon: "🦸" },
+];
+
+function getPoseTransforms(pose: PosePreset) {
+  switch (pose) {
+    case "relaxed":
+      return {
+        leftArmRot:  [0, 0, 0.12] as [number, number, number],
+        rightArmRot: [0, 0, -0.12] as [number, number, number],
+        leftHandRot: [0, 0, 0.12] as [number, number, number],
+        rightHandRot:[0, 0, -0.12] as [number, number, number],
+        leftArmPos:  [-0.01, -0.01, 0] as [number, number, number],
+        rightArmPos: [0.01, -0.01, 0] as [number, number, number],
+        hipTilt: 0.02,
+      };
+    case "akimbo":
+      return {
+        leftArmRot:  [0.15, 0.2, 0.55] as [number, number, number],
+        rightArmRot: [0.15, -0.2, -0.55] as [number, number, number],
+        leftHandRot: [0.3, 0.3, 0.6] as [number, number, number],
+        rightHandRot:[0.3, -0.3, -0.6] as [number, number, number],
+        leftArmPos:  [-0.03, 0.02, 0.02] as [number, number, number],
+        rightArmPos: [0.03, 0.02, 0.02] as [number, number, number],
+        hipTilt: 0,
+      };
+    default: // standing
+      return {
+        leftArmRot:  [0, 0, 0] as [number, number, number],
+        rightArmRot: [0, 0, 0] as [number, number, number],
+        leftHandRot: [0, 0, 0] as [number, number, number],
+        rightHandRot:[0, 0, 0] as [number, number, number],
+        leftArmPos:  [0, 0, 0] as [number, number, number],
+        rightArmPos: [0, 0, 0] as [number, number, number],
+        hipTilt: 0,
+      };
+  }
+}
+
+/* ─────────────────────────────────────────────
    Helpers
    ───────────────────────────────────────────── */
 
@@ -323,10 +387,12 @@ function createThumb(side: -1 | 1, sw: number, g: ReturnType<typeof getGenderMul
    Facial features (detailed)
    ───────────────────────────────────────────── */
 
-function FacialFeatures({ gender }: { gender: Gender }) {
+function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTone }) {
   const g = getGenderMultipliers(gender);
   const s = g.headScale;
   const isFemale = gender === "female";
+  const faceColor = skinTone.faceTint;
+  const lipColor = skinTone.lipTint;
 
   // Eyebrow shape
   const browThickness = isFemale ? 0.003 : 0.005;
@@ -341,7 +407,7 @@ function FacialFeatures({ gender }: { gender: Gender }) {
           {/* Eye socket shadow */}
           <mesh position={[side * 0.032 * s, 1.625 * s / s, -0.002]} rotation={[0.1, 0, 0]}>
             <sphereGeometry args={[0.018 * s, 12, 12]} />
-            <meshPhysicalMaterial color="#c49070" roughness={0.8} transparent opacity={0.3} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.8} transparent opacity={0.3} />
           </mesh>
           {/* Eyeball */}
           <mesh position={[side * 0.032 * s, 1.628, 0.082]}>
@@ -361,12 +427,12 @@ function FacialFeatures({ gender }: { gender: Gender }) {
           {/* Upper eyelid */}
           <mesh position={[side * 0.032 * s, 1.636, 0.086]} rotation={[0.35, 0, 0]} scale={[1.4, 0.4, 0.6]}>
             <sphereGeometry args={[0.012 * s, 10, 6]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Lower eyelid */}
           <mesh position={[side * 0.032 * s, 1.620, 0.086]} rotation={[-0.25, 0, 0]} scale={[1.3, 0.3, 0.5]}>
             <sphereGeometry args={[0.012 * s, 10, 6]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Eyebrow */}
           <mesh position={[side * 0.032 * s, browY, 0.088]} rotation={[0.2, 0, side * -0.08]} scale={[1, 1, 0.5]}>
@@ -388,18 +454,18 @@ function FacialFeatures({ gender }: { gender: Gender }) {
         {/* Nose bridge */}
         <mesh position={[0, 1.605, 0.088]} rotation={[0.1, 0, 0]}>
           <boxGeometry args={[0.010 * s, 0.035, 0.012]} />
-          <meshPhysicalMaterial color="#d4a986" roughness={0.5} clearcoat={0.1} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.5} clearcoat={0.1} />
         </mesh>
         {/* Nose tip */}
         <mesh position={[0, 1.585, 0.098]} rotation={[0.15, 0, 0]}>
           <sphereGeometry args={[isFemale ? 0.010 : 0.013, 10, 10]} />
-          <meshPhysicalMaterial color="#d4a986" roughness={0.45} clearcoat={0.12} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.45} clearcoat={0.12} />
         </mesh>
         {/* Nostrils */}
         {([-1, 1] as const).map((side) => (
           <mesh key={`nostril-${side}`} position={[side * 0.008 * s, 1.582, 0.092]}>
             <sphereGeometry args={[0.005 * s, 8, 8]} />
-            <meshPhysicalMaterial color="#c49070" roughness={0.6} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.6} />
           </mesh>
         ))}
       </group>
@@ -409,22 +475,22 @@ function FacialFeatures({ gender }: { gender: Gender }) {
         {/* Upper lip */}
         <mesh position={[0, 1.567, 0.088]} scale={[1.8, 0.6, 0.6]}>
           <sphereGeometry args={[isFemale ? 0.011 : 0.010, 12, 8]} />
-          <meshPhysicalMaterial color={isFemale ? "#c47068" : "#c48a78"} roughness={0.32} clearcoat={isFemale ? 0.4 : 0.2} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.32} clearcoat={isFemale ? 0.4 : 0.2} />
         </mesh>
         {/* Cupid's bow (upper lip shape) */}
         <mesh position={[0, 1.570, 0.091]} scale={[1, 0.3, 0.3]}>
           <sphereGeometry args={[0.006 * s, 8, 6]} />
-          <meshPhysicalMaterial color={isFemale ? "#c47068" : "#c48a78"} roughness={0.3} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.3} />
         </mesh>
         {/* Lower lip */}
         <mesh position={[0, 1.561, 0.087]} scale={[1.6, 0.7, 0.6]}>
           <sphereGeometry args={[isFemale ? 0.012 : 0.010, 12, 8]} />
-          <meshPhysicalMaterial color={isFemale ? "#c47068" : "#c48a78"} roughness={0.3} clearcoat={isFemale ? 0.45 : 0.25} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.3} clearcoat={isFemale ? 0.45 : 0.25} />
         </mesh>
         {/* Lip line / separation */}
         <mesh position={[0, 1.564, 0.091]} scale={[2, 0.08, 0.3]}>
           <boxGeometry args={[0.010 * s, 0.001, 0.004]} />
-          <meshPhysicalMaterial color="#a06858" roughness={0.5} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.5} />
         </mesh>
       </group>
 
@@ -434,17 +500,17 @@ function FacialFeatures({ gender }: { gender: Gender }) {
           {/* Main ear */}
           <mesh position={[side * 0.098 * s, 1.60, -0.01]} rotation={[0, side * 0.3, 0]} scale={[0.6, 1, 0.5]}>
             <sphereGeometry args={[0.022 * s, 12, 12]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Ear lobe */}
           <mesh position={[side * 0.098 * s, 1.585, -0.008]} scale={[0.5, 0.5, 0.4]}>
             <sphereGeometry args={[0.012 * s, 8, 8]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Inner ear detail */}
           <mesh position={[side * 0.094 * s, 1.602, -0.005]} rotation={[0, side * 0.4, 0]} scale={[0.4, 0.7, 0.3]}>
             <sphereGeometry args={[0.014 * s, 8, 8]} />
-            <meshPhysicalMaterial color="#c49070" roughness={0.6} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.6} />
           </mesh>
         </group>
       ))}
@@ -609,10 +675,13 @@ interface MannequinProps {
   garments: GarmentVisibility;
   bodyMeasurements: BodyMeasurements | null;
   gender?: Gender;
+  skinTone?: SkinTone;
+  pose?: PosePreset;
 }
 
 export default function Mannequin3D({
   color, fabricId, fabricProps, styleConfig, garments, bodyMeasurements, gender = "male",
+  skinTone = SKIN_TONES[1], pose = "standing",
 }: MannequinProps) {
   const group = useRef<THREE.Group>(null);
   const bumpMap = useFabricTexture(fabricId);
@@ -629,13 +698,15 @@ export default function Mannequin3D({
     }
   });
 
+  const poseT = useMemo(() => getPoseTransforms(pose), [pose]);
+
   // ── Materials ──
   const skinMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: "#d4a986", roughness: 0.5, metalness: 0.0,
+    color: skinTone.hex, roughness: 0.5, metalness: 0.0,
     clearcoat: 0.12, clearcoatRoughness: 0.6,
-    sheen: 0.2, sheenColor: new THREE.Color("#e8c4a0"), sheenRoughness: 0.4,
+    sheen: 0.2, sheenColor: new THREE.Color(skinTone.hex).offsetHSL(0, -0.05, 0.1), sheenRoughness: 0.4,
     envMapIntensity: 0.5,
-  }), []);
+  }), [skinTone]);
 
   const suitMat = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(color),
@@ -701,15 +772,25 @@ export default function Mannequin3D({
       <mesh geometry={rightLegGeo} material={skinMat} castShadow />
       <mesh geometry={leftFootGeo} material={skinMat} />
       <mesh geometry={rightFootGeo} material={skinMat} />
-      <mesh geometry={leftArmGeo} material={skinMat} castShadow />
-      <mesh geometry={rightArmGeo} material={skinMat} castShadow />
 
-      {/* ── HANDS with individual fingers ── */}
-      <HandMesh side={-1} sw={sw} g={g} material={skinMat} />
-      <HandMesh side={1} sw={sw} g={g} material={skinMat} />
+      {/* ── ARMS with pose transforms ── */}
+      <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+        <mesh geometry={leftArmGeo} material={skinMat} castShadow />
+      </group>
+      <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+        <mesh geometry={rightArmGeo} material={skinMat} castShadow />
+      </group>
+
+      {/* ── HANDS with pose transforms ── */}
+      <group position={poseT.leftArmPos} rotation={poseT.leftHandRot}>
+        <HandMesh side={-1} sw={sw} g={g} material={skinMat} />
+      </group>
+      <group position={poseT.rightArmPos} rotation={poseT.rightHandRot}>
+        <HandMesh side={1} sw={sw} g={g} material={skinMat} />
+      </group>
 
       {/* ── FACIAL FEATURES ── */}
-      <FacialFeatures gender={gender} />
+      <FacialFeatures gender={gender} skinTone={skinTone} />
 
       {/* ── SHIRT COLLAR ── */}
       {garments.shirt && (
@@ -749,8 +830,12 @@ export default function Mannequin3D({
           <mesh position={[-0.065, 1.06, 0.115]} material={suitMat}>
             <boxGeometry args={[0.06, 0.004, 0.008]} />
           </mesh>
-          <mesh geometry={leftSleeveGeo} material={suitMat} castShadow />
-          <mesh geometry={rightSleeveGeo} material={suitMat} castShadow />
+          <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+            <mesh geometry={leftSleeveGeo} material={suitMat} castShadow />
+          </group>
+          <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+            <mesh geometry={rightSleeveGeo} material={suitMat} castShadow />
+          </group>
         </>
       )}
 
@@ -758,8 +843,12 @@ export default function Mannequin3D({
       {!garments.jacket && garments.shirt && (
         <>
           <mesh geometry={jacketGeo} material={shirtMat} castShadow />
-          <mesh geometry={leftSleeveGeo} material={shirtMat} castShadow />
-          <mesh geometry={rightSleeveGeo} material={shirtMat} castShadow />
+          <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+            <mesh geometry={leftSleeveGeo} material={shirtMat} castShadow />
+          </group>
+          <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+            <mesh geometry={rightSleeveGeo} material={shirtMat} castShadow />
+          </group>
         </>
       )}
 
