@@ -43,6 +43,8 @@ const Customize = () => {
   const [garments, setGarments] = useState<GarmentVisibility>(DEFAULT_GARMENT_VISIBILITY);
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurements | null>(null);
   const [gender, setGender] = useState<Gender>("male");
+  const [skinTone, setSkinTone] = useState<SkinTone>(SKIN_TONES[1]);
+  const [pose, setPose] = useState<PosePreset>("standing");
 
   const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium + selectedPattern.premium;
 
