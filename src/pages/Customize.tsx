@@ -5,31 +5,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Palette, Shirt, Layers, RotateCcw } from "lucide-react";
+import { Palette, Shirt, Layers, RotateCcw, DollarSign } from "lucide-react";
 import * as THREE from "three";
 
 const FABRICS = [
-  { id: "wool", name: "Italian Wool", color: "#2c2c2c", roughness: 0.85, metalness: 0.02, bumpScale: 0.015 },
-  { id: "linen", name: "Belgian Linen", color: "#c8b99a", roughness: 0.95, metalness: 0.0, bumpScale: 0.025 },
-  { id: "cotton", name: "Egyptian Cotton", color: "#f5f0e8", roughness: 0.9, metalness: 0.0, bumpScale: 0.01 },
-  { id: "cashmere", name: "Cashmere Blend", color: "#4a3f35", roughness: 0.75, metalness: 0.03, bumpScale: 0.008 },
+  { id: "wool", name: "Italian Wool", color: "#2c2c2c", roughness: 0.85, metalness: 0.02, bumpScale: 0.015, price: 450 },
+  { id: "linen", name: "Belgian Linen", color: "#c8b99a", roughness: 0.95, metalness: 0.0, bumpScale: 0.025, price: 320 },
+  { id: "cotton", name: "Egyptian Cotton", color: "#f5f0e8", roughness: 0.9, metalness: 0.0, bumpScale: 0.01, price: 280 },
+  { id: "cashmere", name: "Cashmere Blend", color: "#4a3f35", roughness: 0.75, metalness: 0.03, bumpScale: 0.008, price: 680 },
 ];
 
 const COLORS = [
-  { id: "charcoal", name: "Charcoal", hex: "#2c2c2c" },
-  { id: "navy", name: "Navy", hex: "#1a2744" },
-  { id: "burgundy", name: "Burgundy", hex: "#5c1a2a" },
-  { id: "camel", name: "Camel", hex: "#c4a265" },
-  { id: "slate", name: "Slate Grey", hex: "#6b7280" },
-  { id: "cream", name: "Ivory", hex: "#f5f0e8" },
+  { id: "charcoal", name: "Charcoal", hex: "#2c2c2c", premium: 0 },
+  { id: "navy", name: "Navy", hex: "#1a2744", premium: 0 },
+  { id: "burgundy", name: "Burgundy", hex: "#5c1a2a", premium: 25 },
+  { id: "camel", name: "Camel", hex: "#c4a265", premium: 35 },
+  { id: "slate", name: "Slate Grey", hex: "#6b7280", premium: 0 },
+  { id: "cream", name: "Ivory", hex: "#f5f0e8", premium: 15 },
 ];
 
 const STYLES = [
-  { id: "classic", name: "Classic", shoulderMult: 1.0, lapelMult: 1.0, buttonCount: 2 },
-  { id: "slim", name: "Slim Modern", shoulderMult: 0.92, lapelMult: 0.8, buttonCount: 2 },
-  { id: "doublebreasted", name: "Double Breasted", shoulderMult: 1.06, lapelMult: 1.3, buttonCount: 4 },
-  { id: "deconstructed", name: "Deconstructed", shoulderMult: 0.96, lapelMult: 0.6, buttonCount: 0 },
+  { id: "classic", name: "Classic", shoulderMult: 1.0, lapelMult: 1.0, buttonCount: 2, price: 0 },
+  { id: "slim", name: "Slim Modern", shoulderMult: 0.92, lapelMult: 0.8, buttonCount: 2, price: 50 },
+  { id: "doublebreasted", name: "Double Breasted", shoulderMult: 1.06, lapelMult: 1.3, buttonCount: 4, price: 120 },
+  { id: "deconstructed", name: "Deconstructed", shoulderMult: 0.96, lapelMult: 0.6, buttonCount: 0, price: 80 },
 ];
+
+const BASE_TAILORING = 150;
 
 /** Generate a canvas-based fabric bump texture */
 function useFabricTexture(fabricId: string) {
@@ -450,6 +452,8 @@ const Customize = () => {
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0]);
 
+  const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium;
+
   const reset = () => {
     setSelectedFabric(FABRICS[0]);
     setSelectedColor(COLORS[0]);
@@ -566,12 +570,38 @@ const Customize = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-border bg-card">
-                <CardContent className="p-4 space-y-3">
-                  <div className="space-y-1 text-sm">
-                    <p className="text-muted-foreground">Fabric: <span className="text-foreground">{selectedFabric.name}</span></p>
-                    <p className="text-muted-foreground">Color: <span className="text-foreground">{selectedColor.name}</span></p>
-                    <p className="text-muted-foreground">Style: <span className="text-foreground">{selectedStyle.name}</span></p>
+              <Card className="border-primary/30 bg-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" /> Price Estimate
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1.5 text-xs font-body">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Fabric — {selectedFabric.name}</span>
+                      <span className="text-foreground">${selectedFabric.price}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Base tailoring</span>
+                      <span className="text-foreground">${BASE_TAILORING}</span>
+                    </div>
+                    {selectedStyle.price > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Style — {selectedStyle.name}</span>
+                        <span className="text-foreground">+${selectedStyle.price}</span>
+                      </div>
+                    )}
+                    {selectedColor.premium > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Color — {selectedColor.name}</span>
+                        <span className="text-foreground">+${selectedColor.premium}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-border pt-2 mt-2 flex justify-between font-semibold text-sm">
+                      <span className="text-foreground">Estimated Total</span>
+                      <span className="text-primary">${totalPrice.toLocaleString()}</span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="hero" className="flex-1" asChild>
