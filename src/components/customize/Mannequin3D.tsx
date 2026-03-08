@@ -675,10 +675,13 @@ interface MannequinProps {
   garments: GarmentVisibility;
   bodyMeasurements: BodyMeasurements | null;
   gender?: Gender;
+  skinTone?: SkinTone;
+  pose?: PosePreset;
 }
 
 export default function Mannequin3D({
   color, fabricId, fabricProps, styleConfig, garments, bodyMeasurements, gender = "male",
+  skinTone = SKIN_TONES[1], pose = "standing",
 }: MannequinProps) {
   const group = useRef<THREE.Group>(null);
   const bumpMap = useFabricTexture(fabricId);
