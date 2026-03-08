@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AIChatWidget from "@/components/AIChatWidget";
 import Index from "./pages/Index";
 import Bespoke from "./pages/Bespoke";
 import Customize from "./pages/Customize";
@@ -11,9 +12,10 @@ import Checkout from "./pages/Checkout";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import Auth from "./pages/Auth";
 import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
 import BookAppointment from "./pages/BookAppointment";
+import StyleAdvisor from "./pages/StyleAdvisor";
 import NotFound from "./pages/NotFound";
-
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
