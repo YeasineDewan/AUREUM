@@ -8,6 +8,10 @@ import {
   ArrowLeft,
   TrendingUp,
   Bell,
+  FileText,
+  CreditCard,
+  Truck,
+  ShieldAlert,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -28,9 +32,13 @@ const mainNav = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Orders", url: "/admin/orders", icon: ShoppingCart },
   { title: "Products", url: "/admin/products", icon: Package },
+  { title: "Invoices", url: "/admin/invoices", icon: FileText },
   { title: "Customers", url: "/admin/customers", icon: Users },
   { title: "Measurements", url: "/admin/measurements", icon: Ruler },
   { title: "Analytics", url: "/admin/analytics", icon: TrendingUp },
+  { title: "Payments", url: "/admin/payments", icon: CreditCard },
+  { title: "Shipments", url: "/admin/shipments", icon: Truck },
+  { title: "Fraud Check", url: "/admin/fraud", icon: ShieldAlert },
 ];
 
 const secondaryNav = [

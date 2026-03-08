@@ -14,7 +14,490 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          email: string
+          fraud_score: number | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          state: string | null
+          total_orders: number | null
+          total_spent: number | null
+          updated_at: string
+          user_id: string | null
+          zip: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email: string
+          fraud_score?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          fraud_score?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          total_orders?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          currency: string | null
+          customer_id: string | null
+          discount: number | null
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          status: string
+          subtotal: number
+          tax: number | null
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          discount?: number | null
+          due_date?: string
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number | null
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          discount?: number | null
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number | null
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          color: string | null
+          created_at: string
+          custom_details: Json | null
+          fabric: string | null
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          size: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          custom_details?: Json | null
+          fabric?: string | null
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          size?: string | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          custom_details?: Json | null
+          fabric?: string | null
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          size?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          carrier: string | null
+          created_at: string
+          currency: string | null
+          customer_id: string | null
+          discount: number | null
+          fraud_flag: boolean | null
+          fraud_reason: string | null
+          id: string
+          notes: string | null
+          order_number: string
+          payment_method: string | null
+          payment_status: string
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_cost: number | null
+          shipping_country: string | null
+          shipping_zip: string | null
+          status: string
+          subtotal: number
+          tax: number | null
+          total: number
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          carrier?: string | null
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          discount?: number | null
+          fraud_flag?: boolean | null
+          fraud_reason?: string | null
+          id?: string
+          notes?: string | null
+          order_number: string
+          payment_method?: string | null
+          payment_status?: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_cost?: number | null
+          shipping_country?: string | null
+          shipping_zip?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number | null
+          total?: number
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          carrier?: string | null
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          discount?: number | null
+          fraud_flag?: boolean | null
+          fraud_reason?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          payment_method?: string | null
+          payment_status?: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_cost?: number | null
+          shipping_country?: string | null
+          shipping_zip?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number | null
+          total?: number
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          gateway_response: Json | null
+          id: string
+          invoice_id: string | null
+          method: string
+          order_id: string | null
+          paid_at: string | null
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          gateway_response?: Json | null
+          id?: string
+          invoice_id?: string | null
+          method?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          gateway_response?: Json | null
+          id?: string
+          invoice_id?: string | null
+          method?: string
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string
+          color: string | null
+          compare_at_price: number | null
+          cost_price: number | null
+          created_at: string
+          description: string | null
+          dimensions_height: number | null
+          dimensions_length: number | null
+          dimensions_width: number | null
+          fabric_type: string | null
+          featured: boolean | null
+          id: string
+          images: string[] | null
+          low_stock_threshold: number | null
+          name: string
+          price: number
+          seo_description: string | null
+          seo_title: string | null
+          short_description: string | null
+          sizes: string[] | null
+          sku: string | null
+          slug: string | null
+          status: string
+          stock: number
+          subcategory: string | null
+          tags: string[] | null
+          updated_at: string
+          weight: number | null
+          weight_unit: string | null
+        }
+        Insert: {
+          category?: string
+          color?: string | null
+          compare_at_price?: number | null
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          dimensions_height?: number | null
+          dimensions_length?: number | null
+          dimensions_width?: number | null
+          fabric_type?: string | null
+          featured?: boolean | null
+          id?: string
+          images?: string[] | null
+          low_stock_threshold?: number | null
+          name: string
+          price?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          short_description?: string | null
+          sizes?: string[] | null
+          sku?: string | null
+          slug?: string | null
+          status?: string
+          stock?: number
+          subcategory?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Update: {
+          category?: string
+          color?: string | null
+          compare_at_price?: number | null
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          dimensions_height?: number | null
+          dimensions_length?: number | null
+          dimensions_width?: number | null
+          fabric_type?: string | null
+          featured?: boolean | null
+          id?: string
+          images?: string[] | null
+          low_stock_threshold?: number | null
+          name?: string
+          price?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          short_description?: string | null
+          sizes?: string[] | null
+          sku?: string | null
+          slug?: string | null
+          status?: string
+          stock?: number
+          subcategory?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Relationships: []
+      }
+      shipments: {
+        Row: {
+          actual_delivery: string | null
+          carrier: string
+          cost: number | null
+          created_at: string
+          estimated_delivery: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          status: string
+          tracking_number: string | null
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          actual_delivery?: string | null
+          carrier?: string
+          cost?: number | null
+          created_at?: string
+          estimated_delivery?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          actual_delivery?: string | null
+          carrier?: string
+          cost?: number | null
+          created_at?: string
+          estimated_delivery?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
