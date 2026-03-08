@@ -450,6 +450,8 @@ function LoadingFallback() {
 }
 
 const Customize = () => {
+  const addItem = useCartStore((s) => s.addItem);
+  const { toast } = useToast();
   const [selectedFabric, setSelectedFabric] = useState(FABRICS[0]);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0]);
