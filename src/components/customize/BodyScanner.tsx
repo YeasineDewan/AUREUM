@@ -6,6 +6,7 @@ import { Camera, Upload, Loader2, CheckCircle2, AlertCircle, User, Ruler } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { BodyMeasurements } from "@/types/customize";
+import BodyDiagram from "./BodyDiagram";
 
 interface BodyScannerProps {
   onMeasurements: (m: BodyMeasurements) => void;
