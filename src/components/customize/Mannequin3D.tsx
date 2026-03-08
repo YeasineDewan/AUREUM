@@ -454,18 +454,18 @@ function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTo
         {/* Nose bridge */}
         <mesh position={[0, 1.605, 0.088]} rotation={[0.1, 0, 0]}>
           <boxGeometry args={[0.010 * s, 0.035, 0.012]} />
-          <meshPhysicalMaterial color="#d4a986" roughness={0.5} clearcoat={0.1} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.5} clearcoat={0.1} />
         </mesh>
         {/* Nose tip */}
         <mesh position={[0, 1.585, 0.098]} rotation={[0.15, 0, 0]}>
           <sphereGeometry args={[isFemale ? 0.010 : 0.013, 10, 10]} />
-          <meshPhysicalMaterial color="#d4a986" roughness={0.45} clearcoat={0.12} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.45} clearcoat={0.12} />
         </mesh>
         {/* Nostrils */}
         {([-1, 1] as const).map((side) => (
           <mesh key={`nostril-${side}`} position={[side * 0.008 * s, 1.582, 0.092]}>
             <sphereGeometry args={[0.005 * s, 8, 8]} />
-            <meshPhysicalMaterial color="#c49070" roughness={0.6} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.6} />
           </mesh>
         ))}
       </group>
