@@ -1,0 +1,4 @@
+project_id = "xfbcroapgoudsuochbpw"
+
+[functions.analyze-body]
+verify_jwt = false
