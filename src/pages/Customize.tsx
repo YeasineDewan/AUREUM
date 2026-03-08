@@ -568,12 +568,38 @@ const Customize = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-border bg-card">
-                <CardContent className="p-4 space-y-3">
-                  <div className="space-y-1 text-sm">
-                    <p className="text-muted-foreground">Fabric: <span className="text-foreground">{selectedFabric.name}</span></p>
-                    <p className="text-muted-foreground">Color: <span className="text-foreground">{selectedColor.name}</span></p>
-                    <p className="text-muted-foreground">Style: <span className="text-foreground">{selectedStyle.name}</span></p>
+              <Card className="border-primary/30 bg-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" /> Price Estimate
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1.5 text-xs font-body">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Fabric — {selectedFabric.name}</span>
+                      <span className="text-foreground">${selectedFabric.price}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Base tailoring</span>
+                      <span className="text-foreground">${BASE_TAILORING}</span>
+                    </div>
+                    {selectedStyle.price > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Style — {selectedStyle.name}</span>
+                        <span className="text-foreground">+${selectedStyle.price}</span>
+                      </div>
+                    )}
+                    {selectedColor.premium > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Color — {selectedColor.name}</span>
+                        <span className="text-foreground">+${selectedColor.premium}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-border pt-2 mt-2 flex justify-between font-semibold text-sm">
+                      <span className="text-foreground">Estimated Total</span>
+                      <span className="text-primary">${totalPrice.toLocaleString()}</span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="hero" className="flex-1" asChild>
