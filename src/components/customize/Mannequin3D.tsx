@@ -800,19 +800,19 @@ export default function Mannequin3D({
       <mesh geometry={leftFootGeo} material={skinMat} />
       <mesh geometry={rightFootGeo} material={skinMat} />
 
-      {/* ── ARMS with pose transforms ── */}
-      <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+      {/* ── ARMS with animated pose ── */}
+      <group ref={leftArmRef}>
         <mesh geometry={leftArmGeo} material={skinMat} castShadow />
       </group>
-      <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+      <group ref={rightArmRef}>
         <mesh geometry={rightArmGeo} material={skinMat} castShadow />
       </group>
 
-      {/* ── HANDS with pose transforms ── */}
-      <group position={poseT.leftArmPos} rotation={poseT.leftHandRot}>
+      {/* ── HANDS with animated pose ── */}
+      <group ref={leftHandRef}>
         <HandMesh side={-1} sw={sw} g={g} material={skinMat} />
       </group>
-      <group position={poseT.rightArmPos} rotation={poseT.rightHandRot}>
+      <group ref={rightHandRef}>
         <HandMesh side={1} sw={sw} g={g} material={skinMat} />
       </group>
 
