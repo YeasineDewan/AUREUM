@@ -698,13 +698,15 @@ export default function Mannequin3D({
     }
   });
 
+  const poseT = useMemo(() => getPoseTransforms(pose), [pose]);
+
   // ── Materials ──
   const skinMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: "#d4a986", roughness: 0.5, metalness: 0.0,
+    color: skinTone.hex, roughness: 0.5, metalness: 0.0,
     clearcoat: 0.12, clearcoatRoughness: 0.6,
-    sheen: 0.2, sheenColor: new THREE.Color("#e8c4a0"), sheenRoughness: 0.4,
+    sheen: 0.2, sheenColor: new THREE.Color(skinTone.hex).offsetHSL(0, -0.05, 0.1), sheenRoughness: 0.4,
     envMapIntensity: 0.5,
-  }), []);
+  }), [skinTone]);
 
   const suitMat = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(color),
