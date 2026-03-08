@@ -475,22 +475,22 @@ function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTo
         {/* Upper lip */}
         <mesh position={[0, 1.567, 0.088]} scale={[1.8, 0.6, 0.6]}>
           <sphereGeometry args={[isFemale ? 0.011 : 0.010, 12, 8]} />
-          <meshPhysicalMaterial color={isFemale ? "#c47068" : "#c48a78"} roughness={0.32} clearcoat={isFemale ? 0.4 : 0.2} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.32} clearcoat={isFemale ? 0.4 : 0.2} />
         </mesh>
         {/* Cupid's bow (upper lip shape) */}
         <mesh position={[0, 1.570, 0.091]} scale={[1, 0.3, 0.3]}>
           <sphereGeometry args={[0.006 * s, 8, 6]} />
-          <meshPhysicalMaterial color={isFemale ? "#c47068" : "#c48a78"} roughness={0.3} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.3} />
         </mesh>
         {/* Lower lip */}
         <mesh position={[0, 1.561, 0.087]} scale={[1.6, 0.7, 0.6]}>
           <sphereGeometry args={[isFemale ? 0.012 : 0.010, 12, 8]} />
-          <meshPhysicalMaterial color={isFemale ? "#c47068" : "#c48a78"} roughness={0.3} clearcoat={isFemale ? 0.45 : 0.25} />
+          <meshPhysicalMaterial color={lipColor} roughness={0.3} clearcoat={isFemale ? 0.45 : 0.25} />
         </mesh>
         {/* Lip line / separation */}
         <mesh position={[0, 1.564, 0.091]} scale={[2, 0.08, 0.3]}>
           <boxGeometry args={[0.010 * s, 0.001, 0.004]} />
-          <meshPhysicalMaterial color="#a06858" roughness={0.5} />
+          <meshPhysicalMaterial color={faceColor} roughness={0.5} />
         </mesh>
       </group>
 
