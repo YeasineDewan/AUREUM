@@ -92,7 +92,7 @@ const Customize = () => {
                       garments={garments}
                       bodyMeasurements={bodyMeasurements}
                     />
-                    <ContactShadows position={[0, -1.6, 0]} opacity={0.5} scale={4} blur={2} far={3} />
+                    <ContactShadows position={[0, -1.65, 0]} opacity={0.5} scale={4} blur={2} far={3} />
                     <Environment preset="studio" />
                     <OrbitControls
                       enablePan={false}
@@ -103,8 +103,25 @@ const Customize = () => {
                       autoRotate
                       autoRotateSpeed={0.4}
                     />
+                    <SceneExportListener />
                   </Suspense>
                 </Canvas>
+
+                {/* Export overlay buttons */}
+                <div className="absolute top-3 right-3 flex gap-1.5">
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent("export-model", { detail: { format: "glb" } }))}
+                    className="bg-background/80 backdrop-blur-sm rounded px-2 py-1 text-[10px] font-body text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 border border-border"
+                  >
+                    <Download className="h-3 w-3" /> .GLB
+                  </button>
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent("export-model", { detail: { format: "obj" } }))}
+                    className="bg-background/80 backdrop-blur-sm rounded px-2 py-1 text-[10px] font-body text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 border border-border"
+                  >
+                    <Download className="h-3 w-3" /> .OBJ
+                  </button>
+                </div>
 
                 {bodyMeasurements && (
                   <div className="absolute bottom-3 left-3 right-3 flex justify-center">
