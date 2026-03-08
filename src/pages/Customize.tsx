@@ -73,7 +73,7 @@ const Customize = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Body Scanner + Outfit Builder */}
-            <div className="lg:col-span-3 space-y-4 order-2 lg:order-1">
+            <div className="lg:col-span-3 space-y-4 order-2 lg:order-1 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:sticky lg:top-20 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent pr-1">
               {/* Gender Toggle */}
               <Card className="border-border bg-card">
                 <CardHeader className="pb-3">
