@@ -5,6 +5,70 @@ import type { StyleOption, GarmentVisibility, BodyMeasurements } from "@/types/c
 import { measurementsToMorphTargets } from "@/types/customize";
 
 /* ─────────────────────────────────────────────
+   Pose & Skin Tone types
+   ───────────────────────────────────────────── */
+
+export type PosePreset = "standing" | "relaxed" | "akimbo";
+
+export interface SkinTone {
+  id: string;
+  name: string;
+  hex: string;
+  faceTint: string;   // slightly darker for facial shadows
+  lipTint: string;
+}
+
+export const SKIN_TONES: SkinTone[] = [
+  { id: "fair",     name: "Fair",       hex: "#f5d6c3", faceTint: "#e8c4a8", lipTint: "#d4888a" },
+  { id: "light",    name: "Light",      hex: "#d4a986", faceTint: "#c49070", lipTint: "#c47068" },
+  { id: "medium",   name: "Medium",     hex: "#c68642", faceTint: "#a8703a", lipTint: "#a05848" },
+  { id: "tan",      name: "Tan",        hex: "#a0724a", faceTint: "#8a5e3a", lipTint: "#8a4a3a" },
+  { id: "brown",    name: "Brown",      hex: "#8d5524", faceTint: "#724420", lipTint: "#6a3828" },
+  { id: "dark",     name: "Dark",       hex: "#5c3310", faceTint: "#4a280e", lipTint: "#4a2a1a" },
+];
+
+export const POSE_PRESETS: { id: PosePreset; name: string; icon: string }[] = [
+  { id: "standing", name: "Standing", icon: "🧍" },
+  { id: "relaxed",  name: "Relaxed",  icon: "😌" },
+  { id: "akimbo",   name: "Arms Akimbo", icon: "🦸" },
+];
+
+function getPoseTransforms(pose: PosePreset) {
+  switch (pose) {
+    case "relaxed":
+      return {
+        leftArmRot:  [0, 0, 0.12] as [number, number, number],
+        rightArmRot: [0, 0, -0.12] as [number, number, number],
+        leftHandRot: [0, 0, 0.12] as [number, number, number],
+        rightHandRot:[0, 0, -0.12] as [number, number, number],
+        leftArmPos:  [-0.01, -0.01, 0] as [number, number, number],
+        rightArmPos: [0.01, -0.01, 0] as [number, number, number],
+        hipTilt: 0.02,
+      };
+    case "akimbo":
+      return {
+        leftArmRot:  [0.15, 0.2, 0.55] as [number, number, number],
+        rightArmRot: [0.15, -0.2, -0.55] as [number, number, number],
+        leftHandRot: [0.3, 0.3, 0.6] as [number, number, number],
+        rightHandRot:[0.3, -0.3, -0.6] as [number, number, number],
+        leftArmPos:  [-0.03, 0.02, 0.02] as [number, number, number],
+        rightArmPos: [0.03, 0.02, 0.02] as [number, number, number],
+        hipTilt: 0,
+      };
+    default: // standing
+      return {
+        leftArmRot:  [0, 0, 0] as [number, number, number],
+        rightArmRot: [0, 0, 0] as [number, number, number],
+        leftHandRot: [0, 0, 0] as [number, number, number],
+        rightHandRot:[0, 0, 0] as [number, number, number],
+        leftArmPos:  [0, 0, 0] as [number, number, number],
+        rightArmPos: [0, 0, 0] as [number, number, number],
+        hipTilt: 0,
+      };
+  }
+}
+
+/* ─────────────────────────────────────────────
    Helpers
    ───────────────────────────────────────────── */
 
