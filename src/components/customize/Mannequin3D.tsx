@@ -692,13 +692,40 @@ export default function Mannequin3D({
     return measurementsToMorphTargets(bodyMeasurements);
   }, [bodyMeasurements]);
 
-  useFrame((state) => {
+  // ── Animated pose refs ──
+  const targetPose = useMemo(() => getPoseTransforms(pose), [pose]);
+  const leftArmRef = useRef<THREE.Group>(null);
+  const rightArmRef = useRef<THREE.Group>(null);
+  const leftHandRef = useRef<THREE.Group>(null);
+  const rightHandRef = useRef<THREE.Group>(null);
+  const leftSleeveRef = useRef<THREE.Group>(null);
+  const rightSleeveRef = useRef<THREE.Group>(null);
+  const leftSleeveAltRef = useRef<THREE.Group>(null);
+  const rightSleeveAltRef = useRef<THREE.Group>(null);
+
+  const LERP_SPEED = 5; // higher = faster transition
+
+  useFrame((state, delta) => {
     if (group.current) {
       group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.15) * 0.04;
     }
+    const t = 1 - Math.exp(-LERP_SPEED * delta);
+    const lerpGroup = (ref: React.RefObject<THREE.Group | null>, targetPos: [number, number, number], targetRot: [number, number, number]) => {
+      if (!ref.current) return;
+      ref.current.position.lerp(new THREE.Vector3(...targetPos), t);
+      ref.current.rotation.x += (targetRot[0] - ref.current.rotation.x) * t;
+      ref.current.rotation.y += (targetRot[1] - ref.current.rotation.y) * t;
+      ref.current.rotation.z += (targetRot[2] - ref.current.rotation.z) * t;
+    };
+    lerpGroup(leftArmRef, targetPose.leftArmPos, targetPose.leftArmRot);
+    lerpGroup(rightArmRef, targetPose.rightArmPos, targetPose.rightArmRot);
+    lerpGroup(leftHandRef, targetPose.leftArmPos, targetPose.leftHandRot);
+    lerpGroup(rightHandRef, targetPose.rightArmPos, targetPose.rightHandRot);
+    lerpGroup(leftSleeveRef, targetPose.leftArmPos, targetPose.leftArmRot);
+    lerpGroup(rightSleeveRef, targetPose.rightArmPos, targetPose.rightArmRot);
+    lerpGroup(leftSleeveAltRef, targetPose.leftArmPos, targetPose.leftArmRot);
+    lerpGroup(rightSleeveAltRef, targetPose.rightArmPos, targetPose.rightArmRot);
   });
-
-  const poseT = useMemo(() => getPoseTransforms(pose), [pose]);
 
   // ── Materials ──
   const skinMat = useMemo(() => new THREE.MeshPhysicalMaterial({
@@ -773,19 +800,19 @@ export default function Mannequin3D({
       <mesh geometry={leftFootGeo} material={skinMat} />
       <mesh geometry={rightFootGeo} material={skinMat} />
 
-      {/* ── ARMS with pose transforms ── */}
-      <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+      {/* ── ARMS with animated pose ── */}
+      <group ref={leftArmRef}>
         <mesh geometry={leftArmGeo} material={skinMat} castShadow />
       </group>
-      <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+      <group ref={rightArmRef}>
         <mesh geometry={rightArmGeo} material={skinMat} castShadow />
       </group>
 
-      {/* ── HANDS with pose transforms ── */}
-      <group position={poseT.leftArmPos} rotation={poseT.leftHandRot}>
+      {/* ── HANDS with animated pose ── */}
+      <group ref={leftHandRef}>
         <HandMesh side={-1} sw={sw} g={g} material={skinMat} />
       </group>
-      <group position={poseT.rightArmPos} rotation={poseT.rightHandRot}>
+      <group ref={rightHandRef}>
         <HandMesh side={1} sw={sw} g={g} material={skinMat} />
       </group>
 
@@ -830,10 +857,10 @@ export default function Mannequin3D({
           <mesh position={[-0.065, 1.06, 0.115]} material={suitMat}>
             <boxGeometry args={[0.06, 0.004, 0.008]} />
           </mesh>
-          <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+          <group ref={leftSleeveRef}>
             <mesh geometry={leftSleeveGeo} material={suitMat} castShadow />
           </group>
-          <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+          <group ref={rightSleeveRef}>
             <mesh geometry={rightSleeveGeo} material={suitMat} castShadow />
           </group>
         </>
@@ -843,10 +870,10 @@ export default function Mannequin3D({
       {!garments.jacket && garments.shirt && (
         <>
           <mesh geometry={jacketGeo} material={shirtMat} castShadow />
-          <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+          <group ref={leftSleeveAltRef}>
             <mesh geometry={leftSleeveGeo} material={shirtMat} castShadow />
           </group>
-          <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+          <group ref={rightSleeveAltRef}>
             <mesh geometry={rightSleeveGeo} material={shirtMat} castShadow />
           </group>
         </>
