@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { RotateCcw, DollarSign, ShoppingBag } from "lucide-react";
+import { RotateCcw, DollarSign, ShoppingBag, Download } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useToast } from "@/hooks/use-toast";
 import Mannequin3D from "@/components/customize/Mannequin3D";
+import SceneExportListener from "@/components/customize/SceneExportListener";
 import BodyScanner from "@/components/customize/BodyScanner";
 import OutfitBuilder from "@/components/customize/OutfitBuilder";
 import ClothingOptions, {
