@@ -427,12 +427,12 @@ function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTo
           {/* Upper eyelid */}
           <mesh position={[side * 0.032 * s, 1.636, 0.086]} rotation={[0.35, 0, 0]} scale={[1.4, 0.4, 0.6]}>
             <sphereGeometry args={[0.012 * s, 10, 6]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Lower eyelid */}
           <mesh position={[side * 0.032 * s, 1.620, 0.086]} rotation={[-0.25, 0, 0]} scale={[1.3, 0.3, 0.5]}>
             <sphereGeometry args={[0.012 * s, 10, 6]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Eyebrow */}
           <mesh position={[side * 0.032 * s, browY, 0.088]} rotation={[0.2, 0, side * -0.08]} scale={[1, 1, 0.5]}>
