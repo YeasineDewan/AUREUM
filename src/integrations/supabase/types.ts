@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          appointment_type: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          notes: string | null
+          preferred_date: string
+          preferred_time: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          appointment_type?: string
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          preferred_date: string
+          preferred_time: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          appointment_type?: string
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          preferred_date?: string
+          preferred_time?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address_line1: string | null
@@ -442,6 +487,42 @@ export type Database = {
           updated_at?: string
           weight?: number | null
           weight_unit?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          body_measurements: Json | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          preferred_style: string | null
+          saved_designs: Json | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          body_measurements?: Json | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          preferred_style?: string | null
+          saved_designs?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          body_measurements?: Json | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          preferred_style?: string | null
+          saved_designs?: Json | null
+          updated_at?: string
         }
         Relationships: []
       }
