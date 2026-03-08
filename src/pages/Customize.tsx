@@ -156,6 +156,7 @@ const Customize = () => {
 
               <BodyScanner onMeasurements={setBodyMeasurements} measurements={bodyMeasurements} />
               <OutfitBuilder visibility={garments} onChange={setGarments} />
+            </div>
 
             {/* Center: 3D Viewer */}
             <div className="lg:col-span-5 order-1 lg:order-2">
