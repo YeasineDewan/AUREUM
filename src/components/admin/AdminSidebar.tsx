@@ -12,6 +12,7 @@ import {
   CreditCard,
   Truck,
   ShieldAlert,
+  MessageCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
