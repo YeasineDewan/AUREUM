@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Palette, Shirt, Layers, RotateCcw, DollarSign } from "lucide-react";
+import { Palette, Shirt, Layers, RotateCcw, DollarSign, ShoppingBag } from "lucide-react";
+import { useCartStore } from "@/stores/cartStore";
+import { useToast } from "@/hooks/use-toast";
 import * as THREE from "three";
 
 const FABRICS = [
