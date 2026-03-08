@@ -60,12 +60,12 @@ const Navbar = () => {
         <div className="md:hidden bg-background border-t border-border px-6 py-8 space-y-6">
           {navLinks.map((link) => (
             <a
-              key={link}
-              href={`#${link.toLowerCase()}`}
+              key={link.label}
+              href={link.href}
               className="block font-body text-sm tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              {link}
+              {link.label}
             </a>
           ))}
           <div className="flex gap-4 pt-4 border-t border-border">
