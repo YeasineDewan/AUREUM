@@ -857,10 +857,10 @@ export default function Mannequin3D({
           <mesh position={[-0.065, 1.06, 0.115]} material={suitMat}>
             <boxGeometry args={[0.06, 0.004, 0.008]} />
           </mesh>
-          <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+          <group ref={leftSleeveRef}>
             <mesh geometry={leftSleeveGeo} material={suitMat} castShadow />
           </group>
-          <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+          <group ref={rightSleeveRef}>
             <mesh geometry={rightSleeveGeo} material={suitMat} castShadow />
           </group>
         </>
