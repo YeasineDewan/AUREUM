@@ -772,15 +772,25 @@ export default function Mannequin3D({
       <mesh geometry={rightLegGeo} material={skinMat} castShadow />
       <mesh geometry={leftFootGeo} material={skinMat} />
       <mesh geometry={rightFootGeo} material={skinMat} />
-      <mesh geometry={leftArmGeo} material={skinMat} castShadow />
-      <mesh geometry={rightArmGeo} material={skinMat} castShadow />
 
-      {/* ── HANDS with individual fingers ── */}
-      <HandMesh side={-1} sw={sw} g={g} material={skinMat} />
-      <HandMesh side={1} sw={sw} g={g} material={skinMat} />
+      {/* ── ARMS with pose transforms ── */}
+      <group position={poseT.leftArmPos} rotation={poseT.leftArmRot}>
+        <mesh geometry={leftArmGeo} material={skinMat} castShadow />
+      </group>
+      <group position={poseT.rightArmPos} rotation={poseT.rightArmRot}>
+        <mesh geometry={rightArmGeo} material={skinMat} castShadow />
+      </group>
+
+      {/* ── HANDS with pose transforms ── */}
+      <group position={poseT.leftArmPos} rotation={poseT.leftHandRot}>
+        <HandMesh side={-1} sw={sw} g={g} material={skinMat} />
+      </group>
+      <group position={poseT.rightArmPos} rotation={poseT.rightHandRot}>
+        <HandMesh side={1} sw={sw} g={g} material={skinMat} />
+      </group>
 
       {/* ── FACIAL FEATURES ── */}
-      <FacialFeatures gender={gender} />
+      <FacialFeatures gender={gender} skinTone={skinTone} />
 
       {/* ── SHIRT COLLAR ── */}
       {garments.shirt && (
