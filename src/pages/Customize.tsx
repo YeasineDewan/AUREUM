@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Palette, Shirt, Layers, RotateCcw, DollarSign } from "lucide-react";
+import { Palette, Shirt, Layers, RotateCcw, DollarSign, ShoppingBag } from "lucide-react";
+import { useCartStore } from "@/stores/cartStore";
+import { useToast } from "@/hooks/use-toast";
 import * as THREE from "three";
 
 const FABRICS = [
@@ -448,6 +450,8 @@ function LoadingFallback() {
 }
 
 const Customize = () => {
+  const addItem = useCartStore((s) => s.addItem);
+  const { toast } = useToast();
   const [selectedFabric, setSelectedFabric] = useState(FABRICS[0]);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0]);
@@ -604,8 +608,22 @@ const Customize = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="hero" className="flex-1" asChild>
-                      <a href="/bespoke">Order Bespoke</a>
+                    <Button
+                      variant="hero"
+                      className="flex-1"
+                      onClick={() => {
+                        addItem({
+                          id: `custom-${selectedFabric.id}-${selectedColor.id}-${selectedStyle.id}`,
+                          name: "Custom Bespoke Suit",
+                          price: totalPrice,
+                          fabric: selectedFabric.name,
+                          color: selectedColor.name,
+                          style: selectedStyle.name,
+                        });
+                        toast({ title: "Added to cart", description: `Custom suit — ${selectedFabric.name}, ${selectedColor.name}` });
+                      }}
+                    >
+                      <ShoppingBag className="h-4 w-4 mr-2" /> Add to Cart
                     </Button>
                     <Button variant="heroOutline" size="icon" onClick={reset}>
                       <RotateCcw className="h-4 w-4" />
