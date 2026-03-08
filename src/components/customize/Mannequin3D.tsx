@@ -500,17 +500,17 @@ function FacialFeatures({ gender, skinTone }: { gender: Gender; skinTone: SkinTo
           {/* Main ear */}
           <mesh position={[side * 0.098 * s, 1.60, -0.01]} rotation={[0, side * 0.3, 0]} scale={[0.6, 1, 0.5]}>
             <sphereGeometry args={[0.022 * s, 12, 12]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Ear lobe */}
           <mesh position={[side * 0.098 * s, 1.585, -0.008]} scale={[0.5, 0.5, 0.4]}>
             <sphereGeometry args={[0.012 * s, 8, 8]} />
-            <meshPhysicalMaterial color="#d4a986" roughness={0.5} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.5} />
           </mesh>
           {/* Inner ear detail */}
           <mesh position={[side * 0.094 * s, 1.602, -0.005]} rotation={[0, side * 0.4, 0]} scale={[0.4, 0.7, 0.3]}>
             <sphereGeometry args={[0.014 * s, 8, 8]} />
-            <meshPhysicalMaterial color="#c49070" roughness={0.6} />
+            <meshPhysicalMaterial color={faceColor} roughness={0.6} />
           </mesh>
         </group>
       ))}
