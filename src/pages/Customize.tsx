@@ -3,17 +3,20 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows, Html } from "@react-three/drei";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Palette, Shirt, Layers, RotateCcw, DollarSign, ShoppingBag } from "lucide-react";
+import { RotateCcw, DollarSign, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useToast } from "@/hooks/use-toast";
 import Mannequin3D from "@/components/customize/Mannequin3D";
 import BodyScanner from "@/components/customize/BodyScanner";
 import OutfitBuilder from "@/components/customize/OutfitBuilder";
+import ClothingOptions, {
+  FABRIC_TYPES, COLOR_OPTIONS, PATTERNS, COLLAR_STYLES, CUFF_STYLES,
+  type FabricType, type ColorOption, type PatternOption, type CollarOption, type CuffOption,
+} from "@/components/customize/ClothingOptions";
 import {
-  FABRICS, COLORS, STYLES, BASE_TAILORING, DEFAULT_GARMENT_VISIBILITY,
+  STYLES, BASE_TAILORING, DEFAULT_GARMENT_VISIBILITY,
   type BodyMeasurements, type GarmentVisibility,
 } from "@/types/customize";
 
@@ -30,17 +33,23 @@ function LoadingFallback() {
 const Customize = () => {
   const addItem = useCartStore((s) => s.addItem);
   const { toast } = useToast();
-  const [selectedFabric, setSelectedFabric] = useState(FABRICS[0]);
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [selectedFabric, setSelectedFabric] = useState<FabricType>(FABRIC_TYPES[0]);
+  const [selectedColor, setSelectedColor] = useState<ColorOption>(COLOR_OPTIONS[0]);
+  const [selectedPattern, setSelectedPattern] = useState<PatternOption>(PATTERNS[0]);
+  const [selectedCollar, setSelectedCollar] = useState<CollarOption>(COLLAR_STYLES[0]);
+  const [selectedCuff, setSelectedCuff] = useState<CuffOption>(CUFF_STYLES[0]);
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0]);
   const [garments, setGarments] = useState<GarmentVisibility>(DEFAULT_GARMENT_VISIBILITY);
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurements | null>(null);
 
-  const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium;
+  const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium + selectedPattern.premium;
 
   const reset = () => {
-    setSelectedFabric(FABRICS[0]);
-    setSelectedColor(COLORS[0]);
+    setSelectedFabric(FABRIC_TYPES[0]);
+    setSelectedColor(COLOR_OPTIONS[0]);
+    setSelectedPattern(PATTERNS[0]);
+    setSelectedCollar(COLLAR_STYLES[0]);
+    setSelectedCuff(CUFF_STYLES[0]);
     setSelectedStyle(STYLES[0]);
     setGarments(DEFAULT_GARMENT_VISIBILITY);
   };
@@ -54,7 +63,7 @@ const Customize = () => {
             <span className="font-body text-xs tracking-widest uppercase text-primary">Customization Studio</span>
             <h1 className="font-display text-3xl md:text-4xl text-foreground mt-2">Design Your Garment</h1>
             <p className="font-body text-xs text-muted-foreground mt-2 max-w-md mx-auto">
-              Upload a photo for AI-powered measurements, customize every detail, and preview in real-time 3D
+              Upload a photo for AI-powered body structure analysis, then customize fabric, color, pattern, collar & cuff
             </p>
           </div>
 
@@ -96,7 +105,6 @@ const Customize = () => {
                   </Suspense>
                 </Canvas>
 
-                {/* Measurement badge overlay */}
                 {bodyMeasurements && (
                   <div className="absolute bottom-3 left-3 right-3 flex justify-center">
                     <div className="bg-background/80 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-2 text-[10px] font-body text-muted-foreground">
@@ -108,120 +116,51 @@ const Customize = () => {
               </div>
             </div>
 
-            {/* Right: Customization Controls */}
+            {/* Right: Clothing Options + Style + Price */}
             <div className="lg:col-span-4 space-y-4 order-3">
-              <Tabs defaultValue="fabric" className="space-y-4">
-                <TabsList className="bg-secondary w-full grid grid-cols-3">
-                  <TabsTrigger value="fabric" className="text-xs">
-                    <Layers className="h-3.5 w-3.5 mr-1.5" /> Fabric
-                  </TabsTrigger>
-                  <TabsTrigger value="color" className="text-xs">
-                    <Palette className="h-3.5 w-3.5 mr-1.5" /> Color
-                  </TabsTrigger>
-                  <TabsTrigger value="style" className="text-xs">
-                    <Shirt className="h-3.5 w-3.5 mr-1.5" /> Style
-                  </TabsTrigger>
-                </TabsList>
+              <ClothingOptions
+                selectedFabric={selectedFabric}
+                selectedColor={selectedColor}
+                selectedPattern={selectedPattern}
+                selectedCollar={selectedCollar}
+                selectedCuff={selectedCuff}
+                onFabricChange={setSelectedFabric}
+                onColorChange={setSelectedColor}
+                onPatternChange={setSelectedPattern}
+                onCollarChange={setSelectedCollar}
+                onCuffChange={setSelectedCuff}
+              />
 
-                <TabsContent value="fabric">
-                  <Card className="border-border bg-card">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Select Fabric</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 gap-2">
-                      {FABRICS.map((fabric) => (
-                        <button
-                          key={fabric.id}
-                          onClick={() => setSelectedFabric(fabric)}
-                          className={`p-3 rounded border text-left transition-all flex items-center gap-3 ${
-                            selectedFabric.id === fabric.id
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:border-muted-foreground"
-                          }`}
-                        >
-                          <div className="w-10 h-10 rounded-lg border border-border shrink-0" style={{ backgroundColor: fabric.color }} />
-                          <div className="flex-1">
-                            <p className="font-body text-xs text-foreground font-medium">{fabric.name}</p>
-                            <p className="font-body text-[10px] text-muted-foreground">
-                              {fabric.id === "wool" && "Twill weave, structured drape"}
-                              {fabric.id === "linen" && "Crosshatch weave, relaxed drape"}
-                              {fabric.id === "cotton" && "Fine weave, crisp drape"}
-                              {fabric.id === "cashmere" && "Ultra-soft, flowing drape"}
-                            </p>
-                          </div>
-                          <span className="font-body text-xs text-primary">${fabric.price}</span>
-                        </button>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="color">
-                  <Card className="border-border bg-card">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Select Color</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-3 gap-3">
-                        {COLORS.map((color) => (
-                          <button
-                            key={color.id}
-                            onClick={() => setSelectedColor(color)}
-                            className={`flex flex-col items-center gap-2 p-3 rounded border transition-all ${
-                              selectedColor.id === color.id
-                                ? "border-primary bg-primary/10"
-                                : "border-border hover:border-muted-foreground"
-                            }`}
-                          >
-                            <div
-                              className={`w-12 h-12 rounded-full border-2 transition-all ${
-                                selectedColor.id === color.id ? "border-primary ring-2 ring-primary/30 scale-110" : "border-border"
-                              }`}
-                              style={{ backgroundColor: color.hex }}
-                            />
-                            <span className="font-body text-[10px] text-muted-foreground">{color.name}</span>
-                            {color.premium > 0 && (
-                              <span className="font-body text-[9px] text-primary">+${color.premium}</span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="style">
-                  <Card className="border-border bg-card">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Select Style</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-2">
-                      {STYLES.map((style) => (
-                        <button
-                          key={style.id}
-                          onClick={() => setSelectedStyle(style)}
-                          className={`p-4 rounded border text-center transition-all ${
-                            selectedStyle.id === style.id
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:border-muted-foreground"
-                          }`}
-                        >
-                          <p className="font-body text-xs font-medium text-foreground">{style.name}</p>
-                          <p className="font-body text-[10px] text-muted-foreground mt-1">
-                            {style.id === "classic" && "Traditional 2-button"}
-                            {style.id === "slim" && "Modern slim cut"}
-                            {style.id === "doublebreasted" && "Bold 4-button"}
-                            {style.id === "deconstructed" && "Relaxed, no buttons"}
-                          </p>
-                          {style.price > 0 && (
-                            <p className="font-body text-[10px] text-primary mt-1">+${style.price}</p>
-                          )}
-                        </button>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+              {/* Style selector */}
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Suit Style</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-2">
+                  {STYLES.map((style) => (
+                    <button
+                      key={style.id}
+                      onClick={() => setSelectedStyle(style)}
+                      className={`p-4 rounded border text-center transition-all ${
+                        selectedStyle.id === style.id
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:border-muted-foreground"
+                      }`}
+                    >
+                      <p className="font-body text-xs font-medium text-foreground">{style.name}</p>
+                      <p className="font-body text-[10px] text-muted-foreground mt-1">
+                        {style.id === "classic" && "Traditional 2-button"}
+                        {style.id === "slim" && "Modern slim cut"}
+                        {style.id === "doublebreasted" && "Bold 4-button"}
+                        {style.id === "deconstructed" && "Relaxed, no buttons"}
+                      </p>
+                      {style.price > 0 && (
+                        <p className="font-body text-[10px] text-primary mt-1">+${style.price}</p>
+                      )}
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
 
               {/* Price Estimator */}
               <Card className="border-primary/30 bg-card">
@@ -252,25 +191,51 @@ const Customize = () => {
                         <span className="text-foreground">+${selectedColor.premium}</span>
                       </div>
                     )}
+                    {selectedPattern.premium > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Pattern — {selectedPattern.name}</span>
+                        <span className="text-foreground">+${selectedPattern.premium}</span>
+                      </div>
+                    )}
                     <div className="border-t border-border pt-2 mt-2 flex justify-between font-semibold text-sm">
                       <span className="text-foreground">Estimated Total</span>
                       <span className="text-primary">${totalPrice.toLocaleString()}</span>
                     </div>
                   </div>
+
+                  {/* Summary of selections */}
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-[9px] font-body text-muted-foreground">
+                      {selectedFabric.name}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-[9px] font-body text-muted-foreground">
+                      {selectedColor.name}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-[9px] font-body text-muted-foreground">
+                      {selectedPattern.name}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-[9px] font-body text-muted-foreground">
+                      {selectedCollar.name} collar
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-[9px] font-body text-muted-foreground">
+                      {selectedCuff.name} cuff
+                    </span>
+                  </div>
+
                   <div className="flex gap-2">
                     <Button
                       variant="hero"
                       className="flex-1"
                       onClick={() => {
                         addItem({
-                          id: `custom-${selectedFabric.id}-${selectedColor.id}-${selectedStyle.id}`,
+                          id: `custom-${selectedFabric.id}-${selectedColor.id}-${selectedPattern.id}`,
                           name: "Custom Bespoke Suit",
                           price: totalPrice,
                           fabric: selectedFabric.name,
                           color: selectedColor.name,
-                          style: selectedStyle.name,
+                          style: `${selectedStyle.name} / ${selectedPattern.name} / ${selectedCollar.name} collar / ${selectedCuff.name} cuff`,
                         });
-                        toast({ title: "Added to cart", description: `Custom suit — ${selectedFabric.name}, ${selectedColor.name}` });
+                        toast({ title: "Added to cart", description: `Custom suit — ${selectedFabric.name}, ${selectedColor.name}, ${selectedPattern.name}` });
                       }}
                     >
                       <ShoppingBag className="h-4 w-4 mr-2" /> Add to Cart

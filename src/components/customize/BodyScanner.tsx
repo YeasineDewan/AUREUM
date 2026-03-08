@@ -6,6 +6,7 @@ import { Camera, Upload, Loader2, CheckCircle2, AlertCircle, User, Ruler } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { BodyMeasurements } from "@/types/customize";
+import BodyDiagram from "./BodyDiagram";
 
 interface BodyScannerProps {
   onMeasurements: (m: BodyMeasurements) => void;
@@ -158,16 +159,21 @@ export default function BodyScanner({ onMeasurements, measurements }: BodyScanne
 
         {/* Measurements display */}
         {measurements && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
               <Ruler className="h-3.5 w-3.5 text-primary" />
               <span className="font-body text-[10px] tracking-widest uppercase text-muted-foreground">
-                Estimated Measurements
+                Body Structure & Measurements
               </span>
               <Badge variant="outline" className="text-[10px] ml-auto">
                 {Math.round(measurements.confidence * 100)}% conf.
               </Badge>
             </div>
+
+            {/* Visual body diagram */}
+            <BodyDiagram measurements={measurements} />
+
+            {/* Measurements grid */}
             <div className="grid grid-cols-2 gap-1.5">
               {Object.entries(MEASUREMENT_LABELS).map(([key, label]) => {
                 const val = measurements[key as keyof BodyMeasurements];
