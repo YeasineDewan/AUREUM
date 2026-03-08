@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import { RotateCcw, DollarSign, ShoppingBag, Download } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useToast } from "@/hooks/use-toast";
-import Mannequin3D from "@/components/customize/Mannequin3D";
+import Mannequin3D, { type Gender } from "@/components/customize/Mannequin3D";
 import SceneExportListener from "@/components/customize/SceneExportListener";
 import BodyScanner from "@/components/customize/BodyScanner";
 import OutfitBuilder from "@/components/customize/OutfitBuilder";
@@ -42,6 +42,7 @@ const Customize = () => {
   const [selectedStyle, setSelectedStyle] = useState(STYLES[0]);
   const [garments, setGarments] = useState<GarmentVisibility>(DEFAULT_GARMENT_VISIBILITY);
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurements | null>(null);
+  const [gender, setGender] = useState<Gender>("male");
 
   const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium + selectedPattern.premium;
 
@@ -71,6 +72,36 @@ const Customize = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Body Scanner + Outfit Builder */}
             <div className="lg:col-span-3 space-y-4 order-2 lg:order-1">
+              {/* Gender Toggle */}
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Body Type</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex rounded-lg border border-border overflow-hidden">
+                    <button
+                      onClick={() => setGender("male")}
+                      className={`flex-1 py-2.5 px-3 text-xs font-body font-medium transition-all ${
+                        gender === "male"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      ♂ Male
+                    </button>
+                    <button
+                      onClick={() => setGender("female")}
+                      className={`flex-1 py-2.5 px-3 text-xs font-body font-medium transition-all ${
+                        gender === "female"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      ♀ Female
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
               <BodyScanner onMeasurements={setBodyMeasurements} measurements={bodyMeasurements} />
               <OutfitBuilder visibility={garments} onChange={setGarments} />
             </div>
@@ -91,6 +122,7 @@ const Customize = () => {
                       styleConfig={selectedStyle}
                       garments={garments}
                       bodyMeasurements={bodyMeasurements}
+                      gender={gender}
                     />
                     <ContactShadows position={[0, -1.65, 0]} opacity={0.5} scale={4} blur={2} far={3} />
                     <Environment preset="studio" />
