@@ -9,25 +9,28 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { bodyType, preferredStyle, occasion, measurements } = await req.json();
+    const { bodyType, preferredStyle, occasion, measurements, budget, colorPreferences } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const prompt = `You are an expert bespoke menswear style consultant for AUREUM, a luxury tailoring house. 
+    const prompt = `You are an expert bespoke menswear style consultant for AUREUM, a luxury tailoring house in Dhaka. 
 Based on the following client profile, provide personalized fabric, color, and style recommendations.
 
 Client Profile:
 - Body Type: ${bodyType || "Not specified"}
 - Preferred Style: ${preferredStyle || "Classic"}
 - Occasion: ${occasion || "General wardrobe"}
+- Budget Tier: ${budget || "Not specified"}
+- Color Preferences: ${colorPreferences?.length ? colorPreferences.join(", ") : "Open to suggestions"}
 - Measurements: ${measurements ? JSON.stringify(measurements) : "Not provided"}
 
 Provide exactly 4 recommendations. Each should include:
-1. A garment type (suit, blazer, shirt, etc.)
-2. Recommended fabric with specific mill/quality
+1. A garment type (suit, blazer, shirt, trousers, etc.)
+2. Recommended fabric with specific mill/quality (e.g. "Loro Piana Super 150s Wool")
 3. Color recommendation with reasoning
 4. Styling tip specific to their body type
-5. Estimated price range in BDT
+5. Estimated price range in BDT (format as "25,000 – 45,000")
+6. A brief reasoning sentence explaining why this is perfect for them
 
 Return as JSON array with fields: garment, fabric, color, tip, priceRange, reasoning`;
 
