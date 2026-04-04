@@ -200,9 +200,9 @@ const StyleAdvisor = () => {
 
       const { data: profile } = await supabase.from("profiles").select("saved_designs").eq("id", user.id).single();
       const existing = Array.isArray(profile?.saved_designs) ? profile.saved_designs : [];
-      const updated = [...existing, newSet];
+      const updated = [...existing, newSet] as any;
 
-      const { error } = await supabase.from("profiles").update({ saved_designs: updated }).eq("id", user.id);
+      const { error } = await supabase.from("profiles").update({ saved_designs: updated as any }).eq("id", user.id);
       if (error) throw error;
 
       setSavedSets(prev => [...prev, newSet]);
