@@ -1,18 +1,21 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Sparkles, Scissors, Palette, Shirt, Loader2, ChevronRight, ChevronLeft,
   User, Calendar, Target, DollarSign, Heart, RotateCcw, ArrowRight, Check,
-  Ruler, Star, Gem, Crown, Wand2
+  Ruler, Star, Gem, Crown, Wand2, Save, GitCompare, Trash2, X
 } from "lucide-react";
 
 const BODY_TYPES = [
@@ -60,22 +63,77 @@ interface Recommendation {
   reasoning: string;
 }
 
+interface SavedRecommendationSet {
+  id: string;
+  date: string;
+  bodyType: string;
+  style: string;
+  occasion: string;
+  budget: string;
+  measurements: BodyMeasurements;
+  recommendations: Recommendation[];
+}
+
+interface BodyMeasurements {
+  height: number;
+  weight: number;
+  chest: number;
+  waist: number;
+  shoulder: number;
+  inseam: number;
+}
+
+const defaultMeasurements: BodyMeasurements = {
+  height: 170,
+  weight: 70,
+  chest: 96,
+  waist: 82,
+  shoulder: 44,
+  inseam: 78,
+};
+
+const MEASUREMENT_FIELDS: { key: keyof BodyMeasurements; label: string; unit: string; min: number; max: number; step: number }[] = [
+  { key: "height", label: "Height", unit: "cm", min: 140, max: 210, step: 1 },
+  { key: "weight", label: "Weight", unit: "kg", min: 40, max: 150, step: 1 },
+  { key: "chest", label: "Chest", unit: "cm", min: 70, max: 140, step: 1 },
+  { key: "waist", label: "Waist", unit: "cm", min: 55, max: 130, step: 1 },
+  { key: "shoulder", label: "Shoulder Width", unit: "cm", min: 34, max: 60, step: 1 },
+  { key: "inseam", label: "Inseam", unit: "cm", min: 60, max: 100, step: 1 },
+];
+
 const STEPS = ["Body Type", "Style", "Occasion", "Budget", "Colors"];
 
 const StyleAdvisor = () => {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [bodyType, setBodyType] = useState("");
+  const [measurements, setMeasurements] = useState<BodyMeasurements>({ ...defaultMeasurements });
   const [style, setStyle] = useState("");
   const [occasion, setOccasion] = useState("");
   const [budget, setBudget] = useState("");
   const [colorPrefs, setColorPrefs] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [savedSets, setSavedSets] = useState<SavedRecommendationSet[]>([]);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const progress = ((step + 1) / STEPS.length) * 100;
+
+  // Load saved sets from profile
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("saved_designs").eq("id", user.id).single().then(({ data }) => {
+      if (data?.saved_designs && Array.isArray(data.saved_designs)) {
+        const sets = (data.saved_designs as any[]).filter(d => d._type === "style_recommendation");
+        setSavedSets(sets);
+      }
+    });
+  }, [user]);
 
   const toggleColor = (c: string) => {
     if (c === "No Preference") {
@@ -107,6 +165,7 @@ const StyleAdvisor = () => {
           occasion,
           budget,
           colorPreferences: colorPrefs.length ? colorPrefs : undefined,
+          measurements,
         },
       });
       if (error) throw error;
@@ -120,9 +179,65 @@ const StyleAdvisor = () => {
     setLoading(false);
   };
 
+  const saveToProfile = async () => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to save recommendations.", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const newSet: SavedRecommendationSet & { _type: string } = {
+        _type: "style_recommendation",
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+        bodyType,
+        style,
+        occasion,
+        budget,
+        measurements,
+        recommendations,
+      };
+
+      const { data: profile } = await supabase.from("profiles").select("saved_designs").eq("id", user.id).single();
+      const existing = Array.isArray(profile?.saved_designs) ? profile.saved_designs : [];
+      const updated = [...existing, newSet] as any;
+
+      const { error } = await supabase.from("profiles").update({ saved_designs: updated as any }).eq("id", user.id);
+      if (error) throw error;
+
+      setSavedSets(prev => [...prev, newSet]);
+      toast({ title: "Saved!", description: "Recommendations saved to your dashboard." });
+    } catch (e: any) {
+      toast({ title: "Error saving", description: e.message, variant: "destructive" });
+    }
+    setSaving(false);
+  };
+
+  const deleteSavedSet = async (id: string) => {
+    if (!user) return;
+    try {
+      const { data: profile } = await supabase.from("profiles").select("saved_designs").eq("id", user.id).single();
+      const existing = Array.isArray(profile?.saved_designs) ? profile.saved_designs : [];
+      const updated = existing.filter((d: any) => d.id !== id);
+      await supabase.from("profiles").update({ saved_designs: updated }).eq("id", user.id);
+      setSavedSets(prev => prev.filter(s => s.id !== id));
+      setCompareIds(prev => prev.filter(cid => cid !== id));
+      toast({ title: "Deleted" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const toggleCompare = (id: string) => {
+    setCompareIds(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : prev.length < 3 ? [...prev, id] : prev
+    );
+  };
+
   const reset = () => {
     setStep(0);
     setBodyType("");
+    setMeasurements({ ...defaultMeasurements });
     setStyle("");
     setOccasion("");
     setBudget("");
@@ -133,6 +248,8 @@ const StyleAdvisor = () => {
 
   const iconMap: Record<number, typeof Shirt> = { 0: Shirt, 1: Scissors, 2: Palette, 3: Sparkles };
   const stepIcons = [User, Target, Calendar, DollarSign, Palette];
+
+  const comparedSets = savedSets.filter(s => compareIds.includes(s.id));
 
   return (
     <div className="min-h-screen bg-background">
@@ -156,6 +273,16 @@ const StyleAdvisor = () => {
             <p className="font-body text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
               Answer a few questions and our AI consultant will craft bespoke fabric, color, and silhouette recommendations tailored to your unique profile.
             </p>
+            {savedSets.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-6 font-body text-xs tracking-wider border-primary/30"
+                onClick={() => setShowCompare(true)}
+              >
+                <GitCompare className="h-3.5 w-3.5 mr-2" /> Compare Saved ({savedSets.length})
+              </Button>
+            )}
           </div>
         </div>
 
@@ -191,13 +318,14 @@ const StyleAdvisor = () => {
               </div>
 
               {/* Step Content */}
-              <div className="min-h-[320px]">
-                {/* Step 0: Body Type */}
+              <div className="min-h-[400px]">
+                {/* Step 0: Body Type + Measurements */}
                 {step === 0 && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">What's your body type?</h2>
-                    <p className="font-body text-xs text-muted-foreground mb-8">This helps us recommend the most flattering cuts and silhouettes.</p>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <p className="font-body text-xs text-muted-foreground mb-6">Select your build and add measurements for precise recommendations.</p>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
                       {BODY_TYPES.map(b => (
                         <button
                           key={b.value}
@@ -213,6 +341,37 @@ const StyleAdvisor = () => {
                           <span className="font-body text-[10px] text-muted-foreground leading-tight block">{b.desc}</span>
                         </button>
                       ))}
+                    </div>
+
+                    {/* Body Measurements */}
+                    <div className="border border-border rounded-lg p-6 bg-card">
+                      <div className="flex items-center gap-2 mb-5">
+                        <Ruler className="h-4 w-4 text-primary" />
+                        <h3 className="font-display text-sm">Body Measurements</h3>
+                        <span className="font-body text-[10px] text-muted-foreground ml-auto">For precise fit & silhouette matching</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {MEASUREMENT_FIELDS.map(f => (
+                          <div key={f.key} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="font-body text-[10px] tracking-widest uppercase text-muted-foreground">{f.label}</label>
+                              <span className="font-display text-sm text-primary">{measurements[f.key]} {f.unit}</span>
+                            </div>
+                            <Slider
+                              value={[measurements[f.key]]}
+                              onValueChange={([v]) => setMeasurements(prev => ({ ...prev, [f.key]: v }))}
+                              min={f.min}
+                              max={f.max}
+                              step={f.step}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between">
+                              <span className="font-body text-[9px] text-muted-foreground/60">{f.min}{f.unit}</span>
+                              <span className="font-body text-[9px] text-muted-foreground/60">{f.max}{f.unit}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -359,6 +518,9 @@ const StyleAdvisor = () => {
               {/* Summary strip */}
               <div className="mt-8 flex flex-wrap gap-2">
                 {bodyType && <Badge variant="secondary" className="font-body text-[10px]">🧍 {bodyType}</Badge>}
+                {measurements.height !== defaultMeasurements.height && (
+                  <Badge variant="secondary" className="font-body text-[10px]">📏 {measurements.height}cm / {measurements.weight}kg</Badge>
+                )}
                 {style && <Badge variant="secondary" className="font-body text-[10px]">✨ {style}</Badge>}
                 {occasion && <Badge variant="secondary" className="font-body text-[10px]">📅 {occasion}</Badge>}
                 {budget && <Badge variant="secondary" className="font-body text-[10px]">💰 {budget}</Badge>}
@@ -377,11 +539,12 @@ const StyleAdvisor = () => {
                 <h2 className="font-display text-3xl md:text-4xl mb-3">
                   Your Curated <span className="italic text-gradient-gold">Collection</span>
                 </h2>
-                <p className="font-body text-xs text-muted-foreground max-w-md mx-auto mb-6">
-                  Based on your {bodyType.toLowerCase()} build, {style.toLowerCase()} aesthetic, and {occasion.toLowerCase()} needs.
+                <p className="font-body text-xs text-muted-foreground max-w-md mx-auto mb-4">
+                  Based on your {bodyType.toLowerCase()} build ({measurements.height}cm, {measurements.chest}cm chest), {style.toLowerCase()} aesthetic, and {occasion.toLowerCase()} needs.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 mb-6">
                   <Badge variant="outline" className="font-body text-[10px] border-primary/30">🧍 {bodyType}</Badge>
+                  <Badge variant="outline" className="font-body text-[10px] border-primary/30">📏 {measurements.height}cm</Badge>
                   <Badge variant="outline" className="font-body text-[10px] border-primary/30">✨ {style}</Badge>
                   <Badge variant="outline" className="font-body text-[10px] border-primary/30">📅 {occasion}</Badge>
                   <Badge variant="outline" className="font-body text-[10px] border-primary/30">💰 {budget}</Badge>
@@ -400,7 +563,6 @@ const StyleAdvisor = () => {
                       style={{ animationDelay: `${i * 150}ms` }}
                     >
                       <CardContent className="p-0">
-                        {/* Card header */}
                         <div className="p-5 pb-4 border-b border-border bg-secondary/50">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -412,7 +574,6 @@ const StyleAdvisor = () => {
                             </div>
                           </div>
                         </div>
-                        {/* Card body */}
                         <div className="p-5 space-y-3">
                           <div className="grid grid-cols-2 gap-3">
                             <div className="p-3 rounded-md bg-secondary/50">
@@ -443,6 +604,15 @@ const StyleAdvisor = () => {
                 <Button variant="ghost" onClick={reset} className="font-body text-xs tracking-wider">
                   <RotateCcw className="h-4 w-4 mr-2" /> Start Over
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={saveToProfile}
+                  disabled={saving}
+                  className="font-body text-xs tracking-wider border-primary/30"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save to Profile
+                </Button>
                 <Button variant="hero" className="font-body text-xs tracking-wider px-8" asChild>
                   <a href="/book">
                     Book a Consultation <ArrowRight className="h-4 w-4 ml-2" />
@@ -453,6 +623,106 @@ const StyleAdvisor = () => {
           )}
         </div>
       </div>
+
+      {/* Comparison Dialog */}
+      <Dialog open={showCompare} onOpenChange={setShowCompare}>
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto bg-background border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl flex items-center gap-2">
+              <GitCompare className="h-5 w-5 text-primary" /> Compare Recommendations
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Saved sets list */}
+          <div className="space-y-3 mb-6">
+            <p className="font-body text-xs text-muted-foreground">Select up to 3 sets to compare side by side:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {savedSets.map(set => (
+                <div
+                  key={set.id}
+                  className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                    compareIds.includes(set.id)
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-primary/30"
+                  }`}
+                  onClick={() => toggleCompare(set.id)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        compareIds.includes(set.id) ? "border-primary bg-primary" : "border-muted-foreground/30"
+                      }`}>
+                        {compareIds.includes(set.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                      <span className="font-display text-sm">{set.bodyType} · {set.style}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={(e) => { e.stopPropagation(); deleteSavedSet(set.id); }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="secondary" className="text-[9px]">{set.occasion}</Badge>
+                    <Badge variant="secondary" className="text-[9px]">{set.budget}</Badge>
+                    <Badge variant="secondary" className="text-[9px]">{set.measurements.height}cm</Badge>
+                  </div>
+                  <p className="font-body text-[10px] text-muted-foreground mt-2">
+                    {new Date(set.date).toLocaleDateString()} · {set.recommendations.length} items
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Side-by-side comparison */}
+          {comparedSets.length >= 2 && (
+            <div>
+              <Separator className="mb-6" />
+              <div className={`grid gap-4 ${comparedSets.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {comparedSets.map(set => (
+                  <div key={set.id} className="space-y-3">
+                    <div className="p-3 rounded-lg bg-secondary/50 border border-border text-center">
+                      <p className="font-display text-sm">{set.bodyType} · {set.style}</p>
+                      <p className="font-body text-[10px] text-muted-foreground">{set.occasion} · {set.budget}</p>
+                      <p className="font-body text-[9px] text-muted-foreground/60 mt-1">
+                        {set.measurements.height}cm · {set.measurements.chest}cm chest · {set.measurements.waist}cm waist
+                      </p>
+                    </div>
+                    {set.recommendations.map((rec, i) => (
+                      <Card key={i} className="border-border bg-card">
+                        <CardContent className="p-3 space-y-2">
+                          <p className="font-display text-xs">{rec.garment}</p>
+                          <div className="space-y-1">
+                            <p className="font-body text-[9px] text-muted-foreground">
+                              <span className="text-primary">Fabric:</span> {rec.fabric}
+                            </p>
+                            <p className="font-body text-[9px] text-muted-foreground">
+                              <span className="text-primary">Color:</span> {rec.color}
+                            </p>
+                            <p className="font-body text-[9px] text-primary">৳{rec.priceRange}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {comparedSets.length < 2 && savedSets.length >= 2 && (
+            <p className="font-body text-xs text-muted-foreground text-center py-4">Select at least 2 sets to compare</p>
+          )}
+          {savedSets.length < 2 && (
+            <p className="font-body text-xs text-muted-foreground text-center py-4">Save at least 2 recommendation sets to use comparison</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
