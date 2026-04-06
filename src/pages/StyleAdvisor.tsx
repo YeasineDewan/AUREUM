@@ -27,32 +27,57 @@ const BODY_TYPES = [
 ];
 
 const STYLES = [
-  { value: "Classic", icon: Crown, desc: "Timeless elegance & sophistication" },
-  { value: "Modern", icon: Target, desc: "Clean lines & contemporary cuts" },
-  { value: "Casual Elegant", icon: Star, desc: "Relaxed refinement" },
-  { value: "Bold & Statement", icon: Gem, desc: "Stand out with confidence" },
-  { value: "Minimalist", icon: Wand2, desc: "Less is more" },
+  { value: "Classic", icon: Crown, desc: "Timeless elegance & sophistication", details: "Peak lapels, structured shoulders, full-canvas construction. Think Savile Row heritage." },
+  { value: "Modern", icon: Target, desc: "Clean lines & contemporary cuts", details: "Slim notch lapels, minimal padding, half-canvas. Italian-inspired silhouettes." },
+  { value: "Casual Elegant", icon: Star, desc: "Relaxed refinement", details: "Soft shoulders, patch pockets, unstructured blazers. Weekend luxury." },
+  { value: "Bold & Statement", icon: Gem, desc: "Stand out with confidence", details: "Wide peak lapels, double-breasted cuts, textured fabrics, rich colors." },
+  { value: "Minimalist", icon: Wand2, desc: "Less is more", details: "Clean hems, no pocket flaps, tonal buttons, monochrome palettes." },
+  { value: "British Heritage", icon: Crown, desc: "Traditional tailoring excellence", details: "Ticket pockets, slanted hacking pockets, three-button fronts, tweed & flannel." },
+  { value: "Italian Sprezzatura", icon: Star, desc: "Effortless Mediterranean style", details: "Unlined jackets, spalla camicia shoulders, lightweight fabrics, earth tones." },
+  { value: "Power Dressing", icon: Target, desc: "Commanding boardroom presence", details: "Structured power shoulders, pinstripes, dark tones, full-canvas with heavy drape." },
 ];
 
 const OCCASIONS = [
-  { value: "Business Meetings", emoji: "💼" },
-  { value: "Wedding Guest", emoji: "💍" },
-  { value: "Black Tie Event", emoji: "🎩" },
-  { value: "Smart Casual", emoji: "👔" },
-  { value: "Everyday Luxury", emoji: "✨" },
-  { value: "Date Night", emoji: "🌹" },
-  { value: "Cultural Event", emoji: "🎭" },
-  { value: "Travel", emoji: "✈️" },
+  { value: "Business Meetings", emoji: "💼", desc: "Boardroom-ready suits with authoritative presence", formality: "Semi-Formal" },
+  { value: "Wedding Guest", emoji: "💍", desc: "Celebratory elegance without upstaging the couple", formality: "Formal" },
+  { value: "Black Tie Event", emoji: "🎩", desc: "Dinner jackets, bow ties, and evening sophistication", formality: "Black Tie" },
+  { value: "Smart Casual", emoji: "👔", desc: "Polished yet relaxed — blazers with chinos or tailored denim", formality: "Smart Casual" },
+  { value: "Everyday Luxury", emoji: "✨", desc: "Elevated basics for daily wear — premium fabrics in relaxed cuts", formality: "Casual" },
+  { value: "Date Night", emoji: "🌹", desc: "Confident, stylish looks that make an impression", formality: "Smart Casual" },
+  { value: "Cultural Event", emoji: "🎭", desc: "Gallery openings, theater, concerts — creative formality", formality: "Semi-Formal" },
+  { value: "Travel", emoji: "✈️", desc: "Wrinkle-resistant fabrics that look sharp after a long flight", formality: "Casual" },
+  { value: "Groom / Wedding", emoji: "🤵", desc: "Your day — bespoke wedding suit with personal touches", formality: "Formal" },
+  { value: "Graduation / Ceremony", emoji: "🎓", desc: "Milestone celebrations worthy of a fine suit", formality: "Semi-Formal" },
+  { value: "Eid / Festival", emoji: "🌙", desc: "Festive occasion wear blending tradition with modern tailoring", formality: "Formal" },
+  { value: "Job Interview", emoji: "📋", desc: "Professional first impressions — understated confidence", formality: "Semi-Formal" },
 ];
 
 const BUDGETS = [
-  { value: "Standard", range: "৳15,000 – ৳30,000", desc: "Quality essentials" },
-  { value: "Premium", range: "৳30,000 – ৳60,000", desc: "Elevated wardrobe" },
-  { value: "Luxury", range: "৳60,000 – ৳120,000", desc: "Finest materials" },
-  { value: "Bespoke Elite", range: "৳120,000+", desc: "No compromises" },
+  { value: "Essential", range: "৳8,000 – ৳15,000", desc: "Quality ready-to-wear with minor adjustments", includes: "Basic alterations, standard fabrics" },
+  { value: "Standard", range: "৳15,000 – ৳30,000", desc: "Made-to-measure with quality fabrics", includes: "Full measurements, Italian-blend fabrics, basic monogram" },
+  { value: "Premium", range: "৳30,000 – ৳60,000", desc: "Elevated wardrobe with luxury materials", includes: "Hand-finished details, Loro Piana / Zegna fabrics, custom buttons" },
+  { value: "Luxury", range: "৳60,000 – ৳120,000", desc: "Finest materials & master craftsmanship", includes: "Full-canvas construction, horn buttons, hand-stitched buttonholes" },
+  { value: "Bespoke Elite", range: "৳120,000 – ৳250,000", desc: "Ultimate bespoke — no compromises", includes: "Multiple fittings, exclusive mill fabrics, individual pattern, lifetime adjustments" },
+  { value: "Haute Couture", range: "৳250,000+", desc: "Exclusive couture-level commissions", includes: "Private consultations, one-of-one fabric selections, museum-grade construction" },
 ];
 
-const COLOR_PREFS = ["Navy", "Charcoal", "Black", "Brown", "Olive", "Burgundy", "Cream", "Light Blue", "No Preference"];
+const COLOR_PREFS = [
+  { value: "Navy", hex: "#1a2744", desc: "Versatile & authoritative" },
+  { value: "Charcoal", hex: "#2c2c2c", desc: "Sophisticated & slimming" },
+  { value: "Black", hex: "#0a0a0a", desc: "Formal & dramatic" },
+  { value: "Brown", hex: "#5c3d2e", desc: "Warm & approachable" },
+  { value: "Olive", hex: "#556b2f", desc: "Earthy & distinctive" },
+  { value: "Burgundy", hex: "#5c1a2a", desc: "Rich & commanding" },
+  { value: "Cream", hex: "#f5f0e8", desc: "Light & summery" },
+  { value: "Light Blue", hex: "#6b9ac4", desc: "Fresh & youthful" },
+  { value: "Camel", hex: "#c4a265", desc: "Luxurious & warm" },
+  { value: "Forest Green", hex: "#2d5a27", desc: "Bold & natural" },
+  { value: "Slate Grey", hex: "#6b7280", desc: "Modern & neutral" },
+  { value: "Teal", hex: "#2c7873", desc: "Unique & confident" },
+  { value: "Tan", hex: "#d2b48c", desc: "Classic & relaxed" },
+  { value: "Plum", hex: "#4a2040", desc: "Deep & refined" },
+  { value: "No Preference", hex: "", desc: "Let AI decide" },
+];
 
 interface Recommendation {
   garment: string;
