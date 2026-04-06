@@ -406,24 +406,27 @@ const StyleAdvisor = () => {
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">Your preferred style?</h2>
                     <p className="font-body text-xs text-muted-foreground mb-8">Choose the aesthetic that resonates with your personality.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {STYLES.map(s => {
                         const SIcon = s.icon;
                         return (
                           <button
                             key={s.value}
                             onClick={() => setStyle(s.value)}
-                            className={`group p-5 rounded-lg border text-center transition-all duration-300 hover-lift ${
+                            className={`group p-5 rounded-lg border text-left transition-all duration-300 hover-lift ${
                               style === s.value
                                 ? "border-primary bg-primary/10 glow-gold"
                                 : "border-border bg-card hover:border-primary/30"
                             }`}
                           >
-                            <SIcon className={`h-6 w-6 mx-auto mb-2 transition-colors ${
-                              style === s.value ? "text-primary" : "text-muted-foreground group-hover:text-primary/60"
-                            }`} />
-                            <span className="font-display text-sm block mb-1">{s.value}</span>
-                            <span className="font-body text-[10px] text-muted-foreground leading-tight block">{s.desc}</span>
+                            <div className="flex items-center gap-3 mb-2">
+                              <SIcon className={`h-5 w-5 transition-colors ${
+                                style === s.value ? "text-primary" : "text-muted-foreground group-hover:text-primary/60"
+                              }`} />
+                              <span className="font-display text-sm">{s.value}</span>
+                            </div>
+                            <p className="font-body text-[11px] text-muted-foreground leading-relaxed">{s.desc}</p>
+                            <p className="font-body text-[10px] text-muted-foreground/60 mt-1.5 italic leading-snug">{s.details}</p>
                           </button>
                         );
                       })}
@@ -436,19 +439,23 @@ const StyleAdvisor = () => {
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">What's the occasion?</h2>
                     <p className="font-body text-xs text-muted-foreground mb-8">We'll fine-tune formality, fabric weight, and accessories accordingly.</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {OCCASIONS.map(o => (
                         <button
                           key={o.value}
                           onClick={() => setOccasion(o.value)}
-                          className={`group p-5 rounded-lg border text-left transition-all duration-300 hover-lift ${
+                          className={`group p-4 rounded-lg border text-left transition-all duration-300 hover-lift ${
                             occasion === o.value
                               ? "border-primary bg-primary/10 glow-gold"
                               : "border-border bg-card hover:border-primary/30"
                           }`}
                         >
-                          <span className="text-2xl block mb-2">{o.emoji}</span>
-                          <span className="font-display text-sm block">{o.value}</span>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xl">{o.emoji}</span>
+                            <span className="font-display text-sm">{o.value}</span>
+                          </div>
+                          <p className="font-body text-[10px] text-muted-foreground leading-snug">{o.desc}</p>
+                          <Badge variant="secondary" className="text-[8px] mt-2 tracking-widest">{o.formality}</Badge>
                         </button>
                       ))}
                     </div>
@@ -459,7 +466,7 @@ const StyleAdvisor = () => {
                 {step === 3 && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">Your investment range?</h2>
-                    <p className="font-body text-xs text-muted-foreground mb-8">This guides our fabric and craftsmanship recommendations.</p>
+                    <p className="font-body text-xs text-muted-foreground mb-8">This guides our fabric, construction method, and finishing recommendations.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {BUDGETS.map(b => (
                         <button
@@ -473,7 +480,9 @@ const StyleAdvisor = () => {
                         >
                           <span className="font-display text-base block mb-1">{b.value}</span>
                           <span className="font-body text-primary text-sm block mb-1">{b.range}</span>
-                          <span className="font-body text-[10px] text-muted-foreground">{b.desc}</span>
+                          <span className="font-body text-[11px] text-muted-foreground block">{b.desc}</span>
+                          <Separator className="my-2" />
+                          <span className="font-body text-[9px] text-muted-foreground/70 italic block">Includes: {b.includes}</span>
                         </button>
                       ))}
                     </div>
@@ -485,18 +494,25 @@ const StyleAdvisor = () => {
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">Color preferences?</h2>
                     <p className="font-body text-xs text-muted-foreground mb-8">Select any colors you gravitate towards, or skip for AI's best judgment.</p>
-                    <div className="flex flex-wrap gap-3 mb-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-8">
                       {COLOR_PREFS.map(c => (
                         <button
-                          key={c}
-                          onClick={() => toggleColor(c)}
-                          className={`px-5 py-2.5 rounded-full border font-body text-xs tracking-wide transition-all duration-300 ${
-                            colorPrefs.includes(c)
-                              ? "border-primary bg-primary/15 text-primary"
-                              : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                          key={c.value}
+                          onClick={() => toggleColor(c.value)}
+                          className={`group p-3 rounded-lg border text-center transition-all duration-300 ${
+                            colorPrefs.includes(c.value)
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-card hover:border-primary/30"
                           }`}
                         >
-                          {c}
+                          {c.hex && (
+                            <div
+                              className="w-8 h-8 rounded-full mx-auto mb-2 border border-border/50"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                          )}
+                          <span className="font-display text-[11px] block">{c.value}</span>
+                          <span className="font-body text-[9px] text-muted-foreground">{c.desc}</span>
                         </button>
                       ))}
                     </div>
