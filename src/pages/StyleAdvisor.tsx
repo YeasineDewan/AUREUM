@@ -631,6 +631,12 @@ const StyleAdvisor = () => {
                             <p className="font-body text-[9px] tracking-widest uppercase text-primary mb-1">Styling Tip</p>
                             <p className="font-body text-xs text-foreground leading-snug">{rec.tip}</p>
                           </div>
+                          {rec.fitDetail && (
+                            <div className="p-3 rounded-md bg-primary/5 border border-primary/10">
+                              <p className="font-body text-[9px] tracking-widest uppercase text-primary mb-1">Fit & Construction</p>
+                              <p className="font-body text-xs text-foreground leading-snug">{rec.fitDetail}</p>
+                            </div>
+                          )}
                           <p className="font-body text-[10px] text-muted-foreground italic leading-relaxed pt-1">
                             "{rec.reasoning}"
                           </p>
