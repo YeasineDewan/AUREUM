@@ -86,6 +86,7 @@ interface Recommendation {
   tip: string;
   priceRange: string;
   reasoning: string;
+  fitDetail?: string;
 }
 
 interface SavedRecommendationSet {
