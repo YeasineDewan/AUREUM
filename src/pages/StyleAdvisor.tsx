@@ -27,32 +27,57 @@ const BODY_TYPES = [
 ];
 
 const STYLES = [
-  { value: "Classic", icon: Crown, desc: "Timeless elegance & sophistication" },
-  { value: "Modern", icon: Target, desc: "Clean lines & contemporary cuts" },
-  { value: "Casual Elegant", icon: Star, desc: "Relaxed refinement" },
-  { value: "Bold & Statement", icon: Gem, desc: "Stand out with confidence" },
-  { value: "Minimalist", icon: Wand2, desc: "Less is more" },
+  { value: "Classic", icon: Crown, desc: "Timeless elegance & sophistication", details: "Peak lapels, structured shoulders, full-canvas construction. Think Savile Row heritage." },
+  { value: "Modern", icon: Target, desc: "Clean lines & contemporary cuts", details: "Slim notch lapels, minimal padding, half-canvas. Italian-inspired silhouettes." },
+  { value: "Casual Elegant", icon: Star, desc: "Relaxed refinement", details: "Soft shoulders, patch pockets, unstructured blazers. Weekend luxury." },
+  { value: "Bold & Statement", icon: Gem, desc: "Stand out with confidence", details: "Wide peak lapels, double-breasted cuts, textured fabrics, rich colors." },
+  { value: "Minimalist", icon: Wand2, desc: "Less is more", details: "Clean hems, no pocket flaps, tonal buttons, monochrome palettes." },
+  { value: "British Heritage", icon: Crown, desc: "Traditional tailoring excellence", details: "Ticket pockets, slanted hacking pockets, three-button fronts, tweed & flannel." },
+  { value: "Italian Sprezzatura", icon: Star, desc: "Effortless Mediterranean style", details: "Unlined jackets, spalla camicia shoulders, lightweight fabrics, earth tones." },
+  { value: "Power Dressing", icon: Target, desc: "Commanding boardroom presence", details: "Structured power shoulders, pinstripes, dark tones, full-canvas with heavy drape." },
 ];
 
 const OCCASIONS = [
-  { value: "Business Meetings", emoji: "💼" },
-  { value: "Wedding Guest", emoji: "💍" },
-  { value: "Black Tie Event", emoji: "🎩" },
-  { value: "Smart Casual", emoji: "👔" },
-  { value: "Everyday Luxury", emoji: "✨" },
-  { value: "Date Night", emoji: "🌹" },
-  { value: "Cultural Event", emoji: "🎭" },
-  { value: "Travel", emoji: "✈️" },
+  { value: "Business Meetings", emoji: "💼", desc: "Boardroom-ready suits with authoritative presence", formality: "Semi-Formal" },
+  { value: "Wedding Guest", emoji: "💍", desc: "Celebratory elegance without upstaging the couple", formality: "Formal" },
+  { value: "Black Tie Event", emoji: "🎩", desc: "Dinner jackets, bow ties, and evening sophistication", formality: "Black Tie" },
+  { value: "Smart Casual", emoji: "👔", desc: "Polished yet relaxed — blazers with chinos or tailored denim", formality: "Smart Casual" },
+  { value: "Everyday Luxury", emoji: "✨", desc: "Elevated basics for daily wear — premium fabrics in relaxed cuts", formality: "Casual" },
+  { value: "Date Night", emoji: "🌹", desc: "Confident, stylish looks that make an impression", formality: "Smart Casual" },
+  { value: "Cultural Event", emoji: "🎭", desc: "Gallery openings, theater, concerts — creative formality", formality: "Semi-Formal" },
+  { value: "Travel", emoji: "✈️", desc: "Wrinkle-resistant fabrics that look sharp after a long flight", formality: "Casual" },
+  { value: "Groom / Wedding", emoji: "🤵", desc: "Your day — bespoke wedding suit with personal touches", formality: "Formal" },
+  { value: "Graduation / Ceremony", emoji: "🎓", desc: "Milestone celebrations worthy of a fine suit", formality: "Semi-Formal" },
+  { value: "Eid / Festival", emoji: "🌙", desc: "Festive occasion wear blending tradition with modern tailoring", formality: "Formal" },
+  { value: "Job Interview", emoji: "📋", desc: "Professional first impressions — understated confidence", formality: "Semi-Formal" },
 ];
 
 const BUDGETS = [
-  { value: "Standard", range: "৳15,000 – ৳30,000", desc: "Quality essentials" },
-  { value: "Premium", range: "৳30,000 – ৳60,000", desc: "Elevated wardrobe" },
-  { value: "Luxury", range: "৳60,000 – ৳120,000", desc: "Finest materials" },
-  { value: "Bespoke Elite", range: "৳120,000+", desc: "No compromises" },
+  { value: "Essential", range: "৳8,000 – ৳15,000", desc: "Quality ready-to-wear with minor adjustments", includes: "Basic alterations, standard fabrics" },
+  { value: "Standard", range: "৳15,000 – ৳30,000", desc: "Made-to-measure with quality fabrics", includes: "Full measurements, Italian-blend fabrics, basic monogram" },
+  { value: "Premium", range: "৳30,000 – ৳60,000", desc: "Elevated wardrobe with luxury materials", includes: "Hand-finished details, Loro Piana / Zegna fabrics, custom buttons" },
+  { value: "Luxury", range: "৳60,000 – ৳120,000", desc: "Finest materials & master craftsmanship", includes: "Full-canvas construction, horn buttons, hand-stitched buttonholes" },
+  { value: "Bespoke Elite", range: "৳120,000 – ৳250,000", desc: "Ultimate bespoke — no compromises", includes: "Multiple fittings, exclusive mill fabrics, individual pattern, lifetime adjustments" },
+  { value: "Haute Couture", range: "৳250,000+", desc: "Exclusive couture-level commissions", includes: "Private consultations, one-of-one fabric selections, museum-grade construction" },
 ];
 
-const COLOR_PREFS = ["Navy", "Charcoal", "Black", "Brown", "Olive", "Burgundy", "Cream", "Light Blue", "No Preference"];
+const COLOR_PREFS = [
+  { value: "Navy", hex: "#1a2744", desc: "Versatile & authoritative" },
+  { value: "Charcoal", hex: "#2c2c2c", desc: "Sophisticated & slimming" },
+  { value: "Black", hex: "#0a0a0a", desc: "Formal & dramatic" },
+  { value: "Brown", hex: "#5c3d2e", desc: "Warm & approachable" },
+  { value: "Olive", hex: "#556b2f", desc: "Earthy & distinctive" },
+  { value: "Burgundy", hex: "#5c1a2a", desc: "Rich & commanding" },
+  { value: "Cream", hex: "#f5f0e8", desc: "Light & summery" },
+  { value: "Light Blue", hex: "#6b9ac4", desc: "Fresh & youthful" },
+  { value: "Camel", hex: "#c4a265", desc: "Luxurious & warm" },
+  { value: "Forest Green", hex: "#2d5a27", desc: "Bold & natural" },
+  { value: "Slate Grey", hex: "#6b7280", desc: "Modern & neutral" },
+  { value: "Teal", hex: "#2c7873", desc: "Unique & confident" },
+  { value: "Tan", hex: "#d2b48c", desc: "Classic & relaxed" },
+  { value: "Plum", hex: "#4a2040", desc: "Deep & refined" },
+  { value: "No Preference", hex: "", desc: "Let AI decide" },
+];
 
 interface Recommendation {
   garment: string;
@@ -61,6 +86,7 @@ interface Recommendation {
   tip: string;
   priceRange: string;
   reasoning: string;
+  fitDetail?: string;
 }
 
 interface SavedRecommendationSet {
@@ -381,24 +407,27 @@ const StyleAdvisor = () => {
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">Your preferred style?</h2>
                     <p className="font-body text-xs text-muted-foreground mb-8">Choose the aesthetic that resonates with your personality.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {STYLES.map(s => {
                         const SIcon = s.icon;
                         return (
                           <button
                             key={s.value}
                             onClick={() => setStyle(s.value)}
-                            className={`group p-5 rounded-lg border text-center transition-all duration-300 hover-lift ${
+                            className={`group p-5 rounded-lg border text-left transition-all duration-300 hover-lift ${
                               style === s.value
                                 ? "border-primary bg-primary/10 glow-gold"
                                 : "border-border bg-card hover:border-primary/30"
                             }`}
                           >
-                            <SIcon className={`h-6 w-6 mx-auto mb-2 transition-colors ${
-                              style === s.value ? "text-primary" : "text-muted-foreground group-hover:text-primary/60"
-                            }`} />
-                            <span className="font-display text-sm block mb-1">{s.value}</span>
-                            <span className="font-body text-[10px] text-muted-foreground leading-tight block">{s.desc}</span>
+                            <div className="flex items-center gap-3 mb-2">
+                              <SIcon className={`h-5 w-5 transition-colors ${
+                                style === s.value ? "text-primary" : "text-muted-foreground group-hover:text-primary/60"
+                              }`} />
+                              <span className="font-display text-sm">{s.value}</span>
+                            </div>
+                            <p className="font-body text-[11px] text-muted-foreground leading-relaxed">{s.desc}</p>
+                            <p className="font-body text-[10px] text-muted-foreground/60 mt-1.5 italic leading-snug">{s.details}</p>
                           </button>
                         );
                       })}
@@ -411,19 +440,23 @@ const StyleAdvisor = () => {
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">What's the occasion?</h2>
                     <p className="font-body text-xs text-muted-foreground mb-8">We'll fine-tune formality, fabric weight, and accessories accordingly.</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {OCCASIONS.map(o => (
                         <button
                           key={o.value}
                           onClick={() => setOccasion(o.value)}
-                          className={`group p-5 rounded-lg border text-left transition-all duration-300 hover-lift ${
+                          className={`group p-4 rounded-lg border text-left transition-all duration-300 hover-lift ${
                             occasion === o.value
                               ? "border-primary bg-primary/10 glow-gold"
                               : "border-border bg-card hover:border-primary/30"
                           }`}
                         >
-                          <span className="text-2xl block mb-2">{o.emoji}</span>
-                          <span className="font-display text-sm block">{o.value}</span>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xl">{o.emoji}</span>
+                            <span className="font-display text-sm">{o.value}</span>
+                          </div>
+                          <p className="font-body text-[10px] text-muted-foreground leading-snug">{o.desc}</p>
+                          <Badge variant="secondary" className="text-[8px] mt-2 tracking-widest">{o.formality}</Badge>
                         </button>
                       ))}
                     </div>
@@ -434,7 +467,7 @@ const StyleAdvisor = () => {
                 {step === 3 && (
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">Your investment range?</h2>
-                    <p className="font-body text-xs text-muted-foreground mb-8">This guides our fabric and craftsmanship recommendations.</p>
+                    <p className="font-body text-xs text-muted-foreground mb-8">This guides our fabric, construction method, and finishing recommendations.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {BUDGETS.map(b => (
                         <button
@@ -448,7 +481,9 @@ const StyleAdvisor = () => {
                         >
                           <span className="font-display text-base block mb-1">{b.value}</span>
                           <span className="font-body text-primary text-sm block mb-1">{b.range}</span>
-                          <span className="font-body text-[10px] text-muted-foreground">{b.desc}</span>
+                          <span className="font-body text-[11px] text-muted-foreground block">{b.desc}</span>
+                          <Separator className="my-2" />
+                          <span className="font-body text-[9px] text-muted-foreground/70 italic block">Includes: {b.includes}</span>
                         </button>
                       ))}
                     </div>
@@ -460,18 +495,25 @@ const StyleAdvisor = () => {
                   <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                     <h2 className="font-display text-2xl mb-2">Color preferences?</h2>
                     <p className="font-body text-xs text-muted-foreground mb-8">Select any colors you gravitate towards, or skip for AI's best judgment.</p>
-                    <div className="flex flex-wrap gap-3 mb-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-8">
                       {COLOR_PREFS.map(c => (
                         <button
-                          key={c}
-                          onClick={() => toggleColor(c)}
-                          className={`px-5 py-2.5 rounded-full border font-body text-xs tracking-wide transition-all duration-300 ${
-                            colorPrefs.includes(c)
-                              ? "border-primary bg-primary/15 text-primary"
-                              : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                          key={c.value}
+                          onClick={() => toggleColor(c.value)}
+                          className={`group p-3 rounded-lg border text-center transition-all duration-300 ${
+                            colorPrefs.includes(c.value)
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-card hover:border-primary/30"
                           }`}
                         >
-                          {c}
+                          {c.hex && (
+                            <div
+                              className="w-8 h-8 rounded-full mx-auto mb-2 border border-border/50"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                          )}
+                          <span className="font-display text-[11px] block">{c.value}</span>
+                          <span className="font-body text-[9px] text-muted-foreground">{c.desc}</span>
                         </button>
                       ))}
                     </div>
@@ -589,6 +631,12 @@ const StyleAdvisor = () => {
                             <p className="font-body text-[9px] tracking-widest uppercase text-primary mb-1">Styling Tip</p>
                             <p className="font-body text-xs text-foreground leading-snug">{rec.tip}</p>
                           </div>
+                          {rec.fitDetail && (
+                            <div className="p-3 rounded-md bg-primary/5 border border-primary/10">
+                              <p className="font-body text-[9px] tracking-widest uppercase text-primary mb-1">Fit & Construction</p>
+                              <p className="font-body text-xs text-foreground leading-snug">{rec.fitDetail}</p>
+                            </div>
+                          )}
                           <p className="font-body text-[10px] text-muted-foreground italic leading-relaxed pt-1">
                             "{rec.reasoning}"
                           </p>
