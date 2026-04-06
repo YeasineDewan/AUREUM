@@ -10,10 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {
   ShoppingBag, Package, Truck, FileText, User, MapPin, CreditCard,
   CheckCircle2, Clock, AlertCircle, CalendarDays, Palette, Save,
+  Sparkles, GitCompare, Shirt, Scissors, ExternalLink, Trash2, Ruler,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -37,7 +39,7 @@ const CustomerDashboard = () => {
     if (!authLoading && !user) navigate("/auth");
   }, [authLoading, user, navigate]);
 
-  const { data: profile } = useQuery({
+  const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -84,6 +86,20 @@ const CustomerDashboard = () => {
 
   const measurements = profile?.body_measurements as Record<string, string> | null;
   const savedDesigns = (profile?.saved_designs as any[]) || [];
+  const styleRecommendations = savedDesigns.filter((d: any) => d._type === "style_recommendation");
+  const customDesigns = savedDesigns.filter((d: any) => d._type !== "style_recommendation");
+
+  const deleteRecommendationSet = async (id: string) => {
+    if (!user) return;
+    try {
+      const updated = savedDesigns.filter((d: any) => d.id !== id);
+      await supabase.from("profiles").update({ saved_designs: updated }).eq("id", user.id);
+      refetchProfile();
+      toast({ title: "Recommendation set deleted" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
 
   if (authLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
@@ -115,8 +131,8 @@ const CustomerDashboard = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
               { label: "Appointments", value: appointments.length, icon: CalendarDays },
-              { label: "Saved Designs", value: savedDesigns.length, icon: Palette },
-              { label: "Measurements", value: measurements ? Object.keys(measurements).length : 0, icon: Package },
+              { label: "Style Sets", value: styleRecommendations.length, icon: Sparkles },
+              { label: "Saved Designs", value: customDesigns.length, icon: Palette },
               { label: "Style", value: profile?.preferred_style || "Classic", icon: CreditCard },
             ].map((s) => (
               <Card key={s.label} className="border-border bg-card">
@@ -202,31 +218,128 @@ const CustomerDashboard = () => {
 
             {/* SAVED DESIGNS */}
             <TabsContent value="designs">
-              <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="font-display text-base">Saved Designs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {savedDesigns.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Palette className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                      <p className="font-body text-sm text-muted-foreground">No saved designs yet</p>
-                      <Button variant="heroOutline" className="mt-3 text-xs" onClick={() => navigate("/customize")}>
-                        Start Customizing
+              <div className="space-y-6">
+                {/* AI Style Recommendations */}
+                <Card className="border-border bg-card">
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <CardTitle className="font-display text-base">AI Style Recommendations</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {styleRecommendations.length >= 2 && (
+                        <Button variant="outline" size="sm" className="text-xs border-primary/30" onClick={() => navigate("/style-advisor")}>
+                          <GitCompare className="h-3.5 w-3.5 mr-1.5" /> Compare
+                        </Button>
+                      )}
+                      <Button variant="heroOutline" size="sm" className="text-xs" onClick={() => navigate("/style-advisor")}>
+                        <Sparkles className="h-3.5 w-3.5 mr-1.5" /> New Consultation
                       </Button>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      {savedDesigns.map((design: any, i: number) => (
-                        <div key={i} className="p-4 rounded-lg border border-border bg-secondary/20">
-                          <p className="font-display text-sm">{design.name || `Design ${i + 1}`}</p>
-                          <p className="font-body text-[10px] text-muted-foreground mt-1">{design.garmentType || "Custom"}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent>
+                    {styleRecommendations.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Sparkles className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                        <p className="font-body text-sm text-muted-foreground">No AI recommendations yet</p>
+                        <p className="font-body text-xs text-muted-foreground/60 mt-1">Get personalized fabric and style suggestions from our AI advisor</p>
+                        <Button variant="heroOutline" className="mt-3 text-xs" onClick={() => navigate("/style-advisor")}>
+                          Start AI Consultation
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {styleRecommendations.map((set: any) => (
+                          <div key={set.id} className="p-4 rounded-lg border border-border bg-secondary/20 hover:border-primary/20 transition-colors">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <Sparkles className="h-4 w-4 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="font-display text-sm">{set.bodyType} · {set.style}</p>
+                                  <p className="font-body text-[10px] text-muted-foreground">
+                                    {new Date(set.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => deleteRecommendationSet(set.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Tags */}
+                            <div className="flex flex-wrap gap-1.5 mb-3">
+                              <Badge variant="secondary" className="text-[9px]">📅 {set.occasion}</Badge>
+                              <Badge variant="secondary" className="text-[9px]">💰 {set.budget}</Badge>
+                              {set.measurements && (
+                                <>
+                                  <Badge variant="secondary" className="text-[9px]">📏 {set.measurements.height}cm</Badge>
+                                  <Badge variant="secondary" className="text-[9px]">⚖️ {set.measurements.weight}kg</Badge>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Recommendation previews */}
+                            <div className="grid grid-cols-2 gap-2">
+                              {(set.recommendations || []).slice(0, 4).map((rec: any, i: number) => (
+                                <div key={i} className="p-2.5 rounded-md bg-background/50 border border-border/50">
+                                  <p className="font-display text-[11px] text-foreground">{rec.garment}</p>
+                                  <p className="font-body text-[9px] text-muted-foreground truncate">{rec.fabric}</p>
+                                  <p className="font-body text-[9px] text-primary mt-0.5">৳{rec.priceRange}</p>
+                                </div>
+                              ))}
+                            </div>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full mt-3 text-[10px] tracking-wider text-primary hover:text-primary"
+                              onClick={() => navigate("/style-advisor")}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1.5" /> View Full Details & Compare
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Custom Designs */}
+                <Card className="border-border bg-card">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-display text-base">Custom Designs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {customDesigns.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Palette className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                        <p className="font-body text-sm text-muted-foreground">No saved designs yet</p>
+                        <Button variant="heroOutline" className="mt-3 text-xs" onClick={() => navigate("/customize")}>
+                          Start Customizing
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        {customDesigns.map((design: any, i: number) => (
+                          <div key={i} className="p-4 rounded-lg border border-border bg-secondary/20">
+                            <p className="font-display text-sm">{design.name || `Design ${i + 1}`}</p>
+                            <p className="font-body text-[10px] text-muted-foreground mt-1">{design.garmentType || "Custom"}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* PROFILE */}
