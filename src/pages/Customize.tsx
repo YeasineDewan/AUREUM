@@ -50,6 +50,7 @@ const Customize = () => {
   const [gender, setGender] = useState<Gender>("male");
   const [skinTone, setSkinTone] = useState<SkinTone>(SKIN_TONES[1]);
   const [pose, setPose] = useState<PosePreset>("standing");
+  const [extMeasurements, setExtMeasurements] = useState<ExtendedMeasurements>(DEFAULT_EXT_MEASUREMENTS);
 
   const totalPrice = selectedFabric.price + BASE_TAILORING + selectedStyle.price + selectedColor.premium + selectedPattern.premium;
 
@@ -160,6 +161,9 @@ const Customize = () => {
               </Card>
 
               <BodyScanner onMeasurements={setBodyMeasurements} measurements={bodyMeasurements} />
+              <ExpandedMeasurements measurements={extMeasurements} onChange={setExtMeasurements} />
+              <ModelLibrary />
+              <FabricTextureLibrary />
               <OutfitBuilder visibility={garments} onChange={setGarments} />
             </div>
 
