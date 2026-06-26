@@ -205,6 +205,9 @@ const Customize = () => {
                   </Suspense>
                 </Canvas>
 
+                {/* Scene controls overlay (transform mode + loaded model list) */}
+                <SceneControls />
+
                 {/* Export overlay buttons */}
                 <div className="absolute top-3 right-3 flex gap-1.5">
                   <button
