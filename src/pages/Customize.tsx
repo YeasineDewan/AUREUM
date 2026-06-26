@@ -24,6 +24,7 @@ import ModelLibrary from "@/components/customize/ModelLibrary";
 import FabricTextureLibrary from "@/components/customize/FabricTextureLibrary";
 import ExpandedMeasurements from "@/components/customize/ExpandedMeasurements";
 import LoadedModelsScene from "@/components/customize/LoadedModelsScene";
+import SceneControls from "@/components/customize/SceneControls";
 import { DEFAULT_EXT_MEASUREMENTS, type ExtendedMeasurements } from "@/types/customize-extended";
 
 function LoadingFallback() {
@@ -203,6 +204,9 @@ const Customize = () => {
                     <SceneExportListener />
                   </Suspense>
                 </Canvas>
+
+                {/* Scene controls overlay (transform mode + loaded model list) */}
+                <SceneControls />
 
                 {/* Export overlay buttons */}
                 <div className="absolute top-3 right-3 flex gap-1.5">
