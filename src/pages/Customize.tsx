@@ -24,6 +24,7 @@ import ModelLibrary from "@/components/customize/ModelLibrary";
 import FabricTextureLibrary from "@/components/customize/FabricTextureLibrary";
 import ExpandedMeasurements from "@/components/customize/ExpandedMeasurements";
 import LoadedModelsScene from "@/components/customize/LoadedModelsScene";
+import SceneControls from "@/components/customize/SceneControls";
 import { DEFAULT_EXT_MEASUREMENTS, type ExtendedMeasurements } from "@/types/customize-extended";
 
 function LoadingFallback() {
