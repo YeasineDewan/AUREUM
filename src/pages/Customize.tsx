@@ -189,13 +189,15 @@ const Customize = () => {
                     />
                     <ContactShadows position={[0, -1.65, 0]} opacity={0.5} scale={4} blur={2} far={3} />
                     <Environment preset="studio" />
+                    <LoadedModelsScene />
                     <OrbitControls
+                      makeDefault
                       enablePan={false}
                       minDistance={2}
                       maxDistance={5.5}
                       minPolarAngle={Math.PI / 5}
                       maxPolarAngle={Math.PI / 1.7}
-                      autoRotate
+                      autoRotate={false}
                       autoRotateSpeed={0.4}
                     />
                     <SceneExportListener />
