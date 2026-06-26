@@ -20,6 +20,11 @@ import {
   STYLES, BASE_TAILORING, DEFAULT_GARMENT_VISIBILITY,
   type BodyMeasurements, type GarmentVisibility,
 } from "@/types/customize";
+import ModelLibrary from "@/components/customize/ModelLibrary";
+import FabricTextureLibrary from "@/components/customize/FabricTextureLibrary";
+import ExpandedMeasurements from "@/components/customize/ExpandedMeasurements";
+import LoadedModelsScene from "@/components/customize/LoadedModelsScene";
+import { DEFAULT_EXT_MEASUREMENTS, type ExtendedMeasurements } from "@/types/customize-extended";
 
 function LoadingFallback() {
   return (
