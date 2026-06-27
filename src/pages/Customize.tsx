@@ -25,6 +25,10 @@ import FabricTextureLibrary from "@/components/customize/FabricTextureLibrary";
 import ExpandedMeasurements from "@/components/customize/ExpandedMeasurements";
 import LoadedModelsScene from "@/components/customize/LoadedModelsScene";
 import SceneControls from "@/components/customize/SceneControls";
+import EnvironmentLibrary from "@/components/customize/EnvironmentLibrary";
+import SketchfabSearch from "@/components/customize/SketchfabSearch";
+import AnimationPlayer from "@/components/customize/AnimationPlayer";
+import SceneEnvironment from "@/components/customize/SceneEnvironment";
 import { DEFAULT_EXT_MEASUREMENTS, type ExtendedMeasurements } from "@/types/customize-extended";
 
 function LoadingFallback() {
@@ -164,6 +168,9 @@ const Customize = () => {
               <BodyScanner onMeasurements={setBodyMeasurements} measurements={bodyMeasurements} />
               <ExpandedMeasurements measurements={extMeasurements} onChange={setExtMeasurements} />
               <ModelLibrary />
+              <SketchfabSearch />
+              <AnimationPlayer />
+              <EnvironmentLibrary />
               <FabricTextureLibrary />
               <OutfitBuilder visibility={garments} onChange={setGarments} />
             </div>
@@ -173,10 +180,7 @@ const Customize = () => {
               <div className="bg-card border border-border rounded-lg overflow-hidden sticky top-20" style={{ height: "650px" }}>
                 <Canvas camera={{ position: [0, 0.8, 3.2], fov: 40 }} shadows>
                   <Suspense fallback={<LoadingFallback />}>
-                    <ambientLight intensity={0.35} />
-                    <directionalLight position={[4, 6, 4]} intensity={0.9} castShadow shadow-mapSize={[1024, 1024]} />
-                    <directionalLight position={[-3, 4, -2]} intensity={0.25} />
-                    <spotLight position={[0, 5, 3]} angle={0.3} penumbra={0.8} intensity={0.4} />
+                    <SceneEnvironment />
                     <Mannequin3D
                       color={selectedColor.hex}
                       fabricId={selectedFabric.id}
@@ -189,7 +193,6 @@ const Customize = () => {
                       pose={pose}
                     />
                     <ContactShadows position={[0, -1.65, 0]} opacity={0.5} scale={4} blur={2} far={3} />
-                    <Environment preset="studio" />
                     <LoadedModelsScene />
                     <OrbitControls
                       makeDefault
