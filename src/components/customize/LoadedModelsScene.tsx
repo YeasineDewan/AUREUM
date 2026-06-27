@@ -1,24 +1,44 @@
 import { Suspense, useRef, useEffect } from "react";
-import { useGLTF, TransformControls, Html } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useGLTF, TransformControls, Html, useAnimations } from "@react-three/drei";
 import * as THREE from "three";
 import { useSceneAssets, type LoadedSceneModel } from "@/stores/sceneAssetsStore";
+import { useAnimationStore } from "@/stores/animationStore";
 
 function GLTFModel({ entry }: { entry: LoadedSceneModel }) {
   const groupRef = useRef<THREE.Group>(null);
   const { selectedUid, selectModel, updateModel, transformMode } = useSceneAssets();
+  const { activeClipId, targetUid, playing } = useAnimationStore();
   const isSelected = selectedUid === entry.uid;
 
   let scene: THREE.Group | null = null;
+  let animations: THREE.AnimationClip[] = [];
   try {
     const gltf = useGLTF(entry.model.url);
     scene = gltf.scene.clone();
-  } catch (err) {
-    // Silently skip — error rendered by Suspense boundary
+    animations = gltf.animations || [];
+  } catch {
     return null;
   }
 
-  // Persist transform back to store on drag-end
+  const { actions, names } = useAnimations(animations, groupRef);
+
+  // Drive animation when this is the targeted model
+  useEffect(() => {
+    if (targetUid !== entry.uid || !activeClipId || names.length === 0) {
+      Object.values(actions).forEach((a) => a?.stop());
+      return;
+    }
+    // Match by clip id token or fallback to first available
+    const match = names.find((n) => n.toLowerCase().includes(activeClipId)) ?? names[0];
+    const action = actions[match];
+    if (!action) return;
+    action.reset().fadeIn(0.3).play();
+    action.paused = !playing;
+    return () => {
+      action.fadeOut(0.2);
+    };
+  }, [actions, names, activeClipId, targetUid, entry.uid, playing]);
+
   const handleObjectChange = () => {
     if (!groupRef.current) return;
     const o = groupRef.current;
@@ -48,16 +68,11 @@ function GLTFModel({ entry }: { entry: LoadedSceneModel }) {
 
   if (isSelected) {
     return (
-      <TransformControls
-        mode={transformMode}
-        onObjectChange={handleObjectChange}
-        size={0.6}
-      >
+      <TransformControls mode={transformMode} onObjectChange={handleObjectChange} size={0.6}>
         {content}
       </TransformControls>
     );
   }
-
   return content;
 }
 
@@ -88,5 +103,4 @@ export default function LoadedModelsScene() {
   );
 }
 
-// Preload common models for snappier UX
 useGLTF.preload("https://threejs.org/examples/models/gltf/Duck/glTF-Binary/Duck.glb");
